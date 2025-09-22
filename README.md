@@ -26,7 +26,6 @@ uv run scripts/infer.py \
     --output predictions
 ```
 ### 2. Segment merging
-Segment merging (optional)
 
 Simply specify the input folder and output folder. For more fine-grained tuning, use the `min-duration-on-s` and `min-duration-off-s` parameters.
 
