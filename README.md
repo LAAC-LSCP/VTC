@@ -1,12 +1,55 @@
 # Voice Type Classifier (VTC)
 
 
+## Usage
+Ensure that you have uv installed on you system.
 
-## Acknowledgement
-The Voice Type Classifier has benefited from numerous contributions over time, following publications document its evolution, listed in reverse chronological order.
+Clone the repo and setup the dependencies:
 
+```
+git clone https://github.com/LAAC-LSCP/VTC.git
+cd VTC
 
-#### 1. BabyHuBERT-VTC
+uv sync
+```
+The audio files for inference simply need to lie in a simple repository, the inference script will load them automatically.
+
+### 1. Inference
+
+Inference is done using a checkpoint of the model, linking the corresponding config file used for training and the list of audio files to run the inference on.
+
+```bash
+uv run scripts/infer.py \
+     --config model/config.yml \
+    --wavs audios \
+    --checkpoint model/best.ckpt \
+    --output predictions
+```
+### 2. Segment merging
+Segment merging (optional)
+
+Simply specify the input folder and output folder. For more fine-grained tuning, use the `min-duration-on-s` and `min-duration-off-s` parameters.
+
+```bash
+uv run scripts/merge_segments.py \
+    --folder rttm_folder \
+    --output rttm_merged
+```
+
+### Helper script
+
+To perform inference and speech segment merging (see merge_segments.py for help or [this pyannote.audio description](https://github.com/pyannote/pyannote-audio/blob/240a7f3ef60bc613169df860b536b10e338dbf3c/pyannote/audio/pipelines/resegmentation.py#L79-L82)), a single bash script is given.
+
+Simply set the correct variables in the script and run it:
+
+```bash
+sh scripts/run.sh
+````
+
+---
+## Citation
+To cite this work, please use the following bibtex.
+
 ```bibtex
 @misc{charlot2025babyhubertmultilingualselfsupervisedlearning,
     title={BabyHuBERT: Multilingual Self-Supervised Learning for Segmenting Speakers in Child-Centered Long-Form Recordings}, 
@@ -19,7 +62,10 @@ The Voice Type Classifier has benefited from numerous contributions over time, f
 }
 ```
 
-#### 2. Whisper-VTC
+## Acknowledgement
+The Voice Type Classifier has benefited from numerous contributions over time, following publications document its evolution, listed in reverse chronological order.
+
+#### 1. Whisper-**VTC**
 ```bibtex
 @inproceedings{kunze25_interspeech,
     title     = {{Challenges in Automated Processing of Speech from Child Wearables:  The Case of Voice Type Classifier}},
@@ -32,7 +78,7 @@ The Voice Type Classifier has benefited from numerous contributions over time, f
 }
 ```
 
-#### 3. PyanNet-VTC (Original)
+#### 2. PyanNet-VTC (Original)
 ```bibtex
 @inproceedings{lavechin20_interspeech,
     title     = {An Open-Source Voice Type Classifier for Child-Centered Daylong Recordings},
