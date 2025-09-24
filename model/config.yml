@@ -1,0 +1,44 @@
+wandb:
+  offline: false
+  project: babyhubert-finetune
+  name: train
+data:
+  dataset_path: data/baby_train
+  classes:
+  - KCHI
+  - OCH
+  - MAL
+  - FEM
+  dataset_multiplier: 1.0
+audio:
+  chunk_duration_s: 4
+  sample_rate: 16000
+  strict_frames: false
+model:
+  name: surgical_hubert_hydra
+  chkp_path: null
+  config:
+    wav_encoder: ""
+    encoder_layers: []
+    reduction: weighted
+    lstm:
+      hidden_size: 128
+      num_layers: 2
+      bidirectional: true
+      dropout: 0.5
+    classifier: 256
+train:
+  lr: 1.0e-05
+  batch_size: 128
+  max_epochs: 3
+  validation_metric: loss
+  extra_val_metrics:
+  - loss
+  - f1_score
+  profiler: null
+  dataloader:
+    num_workers: 8
+  scheduler:
+    patience: 3
+  seed: null
+  lstm: false
