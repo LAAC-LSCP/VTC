@@ -15,7 +15,7 @@ if __name__ == "__main__":
         "-c",
         "--config",
         type=str,
-        required=True,
+        default="model/config.yml",
         help="Config file to be loaded and used for inference.",
     )
     parser.add_argument("--uris", help="list of uris to use for prediction")
@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ckpt",
         "--checkpoint",
+        default="model/best.ckpt",
         help="Path to a pretrained model checkpoint.",
     )
     parser.add_argument(
