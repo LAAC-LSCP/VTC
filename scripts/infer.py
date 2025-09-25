@@ -113,7 +113,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--save-logits",
-        "--save_logits",
         action="store_true",
         help="If the prediction scripts saves the logits to disk, can be memory intensive.",
     )
@@ -152,10 +151,7 @@ if __name__ == "__main__":
 
     cfg: Config = load_config(args.config)
 
-    if "hydra" in cfg.model.name:
-        l_encoder = MultiLabelEncoder(labels=cfg.data.classes)
-    else:
-        raise ValueError("Not supported.")
+    l_encoder = MultiLabelEncoder(labels=cfg.data.classes)
 
     model = Models[cfg.model.name].load_from_checkpoint(
         checkpoint_path=args.ckpt, label_encoder=l_encoder, config=cfg, train=False
@@ -170,11 +166,7 @@ if __name__ == "__main__":
         device = torch.device("cpu")
     model.to(device)
 
-    if cfg.model.name in ("hydra_whisper", "HydraWhisper"):
-        torch._dynamo.config.accumulated_cache_size_limit = 32
-        if hasattr(torch._dynamo.config, "cache_size_limit"):
-            torch._dynamo.config.cache_size_limit = 32
-        model = torch.compile(model)
+    model = torch.compile(model)
 
     # NOTE if args.uris: path is known
     if args.uris:
@@ -234,7 +226,11 @@ if __name__ == "__main__":
         # NOTE - process, should handle the case where a single rttm contains multiple URIS
         for uri, annot in load_one_uri(data):
             uri_to_annot[uri] = annot
-            uri_to_proc_annot[uri] = process_annot(annot)
+            uri_to_proc_annot[uri] = process_annot(
+                annotation=annot,
+                min_duration_off_s=args.min_duration_off_s,
+                min_duration_on_s=args.min_duration_on_s,
+            )
 
         for uri, annot in uri_to_proc_annot.items():
             (merged_out_p / uri).with_suffix(".rttm").write_text(annot.to_rttm())
