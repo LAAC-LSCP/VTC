@@ -14,25 +14,14 @@ uv sync
 ```
 The audio files for inference simply need to lie in a simple repository, the inference script will load them automatically.
 
-### 1. Inference
+### Inference
 
-Inference is done using a checkpoint of the model, linking the corresponding config file used for training and the list of audio files to run the inference on.
+Inference is done using a checkpoint of the model, linking the corresponding config file used for training and the list of audio files to run the inference on. For more fine-grained tuning, use the `min-duration-on-s` and `min-duration-off-s` parameters.
 
 ```bash
 uv run scripts/infer.py \
-     --config model/config.yml \
     --wavs audios \
-    --checkpoint model/best.ckpt \
     --output predictions
-```
-### 2. Segment merging
-
-Simply specify the input folder and output folder. For more fine-grained tuning, use the `min-duration-on-s` and `min-duration-off-s` parameters.
-
-```bash
-uv run scripts/merge_segments.py \
-    --folder rttm_folder \
-    --output rttm_merged
 ```
 
 ### Helper script

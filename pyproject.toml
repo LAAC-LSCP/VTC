@@ -5,8 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "pyannote-audio>=3.4.0",
     "segma",
+    "tqdm>=4.67.1",
 ]
 
 [tool.uv.sources]
-segma = { git = "https://github.com/arxaqapi/segma", rev = "d3e9922e4d21f17c3b1dc86301a514eddb0c9dbf" }
+segma = { git = "https://github.com/arxaqapi/segma", rev = "c34dd285021b46d7a63d3177f7e9397554919575" }
