@@ -1,8 +1,16 @@
 # Voice Type Classifier (VTC)
 
+This repository contains the code and model to run the Voice Type Classifier on audio files.
+The output classes are:
+
+- **FEM** stands for adult female speech
+- **MAL** stands for adult male speech
+- **KCHI** stands for key-child speech
+- **OCH** stands for other child speech
+
 
 ## Usage
-Ensure that you have uv installed on you system.
+Ensure that you have [uv](https://docs.astral.sh/uv/) and [ffmpeg](https://ffmpeg.org/) installed on you system.
 
 Clone the repo and setup the dependencies:
 
@@ -24,13 +32,10 @@ uv run scripts/infer.py \
     --output predictions
 ```
 
-The output of the model will be in `<output_folder>/rttm`. The raw outputs without segment merging applied are present in `<output_folder>/raw_rttm`.
+The output of the model (with segment merging applied, see [this pyannote.audio description](https://github.com/pyannote/pyannote-audio/blob/240a7f3ef60bc613169df860b536b10e338dbf3c/pyannote/audio/pipelines/resegmentation.py#L79-L82)) will be in `<output_folder>/rttm`. The raw outputs without segment merging applied are present in `<output_folder>/raw_rttm`.
 
 ### Helper script
-
-To perform inference and speech segment merging (see merge_segments.py for help or [this pyannote.audio description](https://github.com/pyannote/pyannote-audio/blob/240a7f3ef60bc613169df860b536b10e338dbf3c/pyannote/audio/pipelines/resegmentation.py#L79-L82)), a single bash script is given.
-
-Simply set the correct variables in the script and run it:
+An example of a bash script is given to perform inference in `scripts/run.sh`. Simply set the correct variables in the script and run it:
 
 ```bash
 sh scripts/run.sh
