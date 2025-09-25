@@ -1,4 +1,4 @@
-# Voice Type Classifier (VTC)
+# Voice Type Classifier (VTC) 2.0
 
 This repository contains the code and model to run the Voice Type Classifier on audio files.
 The output classes are:
@@ -60,7 +60,7 @@ To cite this work, please use the following bibtex.
 ## Acknowledgement
 The Voice Type Classifier has benefited from numerous contributions over time, following publications document its evolution, listed in reverse chronological order.
 
-#### 1. Whisper-**VTC**
+#### 1. VTC 1.5 (Whisper-VTC)
 ```bibtex
 @inproceedings{kunze25_interspeech,
     title     = {{Challenges in Automated Processing of Speech from Child Wearables:  The Case of Voice Type Classifier}},
@@ -73,7 +73,7 @@ The Voice Type Classifier has benefited from numerous contributions over time, f
 }
 ```
 
-#### 2. PyanNet-VTC (Original)
+#### 2. VTC 1.0 (PyanNet-VTC)
 ```bibtex
 @inproceedings{lavechin20_interspeech,
     title     = {An Open-Source Voice Type Classifier for Child-Centered Daylong Recordings},
