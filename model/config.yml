@@ -21,11 +21,6 @@ model:
     wav_encoder: ""
     encoder_layers: []
     reduction: weighted
-    lstm:
-      hidden_size: 128
-      num_layers: 2
-      bidirectional: true
-      dropout: 0.5
     classifier: 256
 train:
   lr: 1.0e-05
@@ -40,5 +35,3 @@ train:
     num_workers: 8
   scheduler:
     patience: 3
-  seed: null
-  lstm: false

@@ -3,14 +3,9 @@ import copy
 from pathlib import Path
 
 import polars as pl
-import torch
 import tqdm
-import yaml
 from pyannote.core import Annotation, Segment
-from segma.config import Config, load_config
-from segma.models import Models
-from segma.predict import sliding_prediction
-from segma.utils.encoders import MultiLabelEncoder
+from segma.inference import run_inference_on_audios
 
 
 def load_aa(path: Path):
@@ -99,8 +94,9 @@ def main(
     thresholds: None | dict = None,
     min_duration_on_s: float = 0.1,
     min_duration_off_s: float = 0.1,
+    batch_size: int = 128,
 ):
-    """Run sliding prediction and merges the created segments.
+    """Run sliding inference on the given files and then merges the created segments.
 
     Args:
         uris (list[str]): list of uris to use for prediction.
@@ -112,84 +108,24 @@ def main(
         thresholds (None | dict, optional): If thresholds dict is given, perform predictions using thresholding.. Defaults to None.
         min_duration_on_s (float, optional): Remove speech segments shorter than that many seconds.. Defaults to .1.
         min_duration_off_s (float, optional): Fill same-speaker gaps shorter than that many seconds.. Defaults to .1.
+        batch_size (int): Batch size to use during inference. Defaults to 128.
 
     Raises:
         ValueError: _description_
         ValueError: _description_
         ValueError: _description_
     """
-    wavs = Path(wavs)
-    checkpoint = Path(checkpoint)
+    run_inference_on_audios(
+        config=config,
+        uris=uris,
+        wavs=wavs,
+        checkpoint=checkpoint,
+        output=output,
+        thresholds=thresholds,
+        batch_size=batch_size,
+    )
     output = Path(output)
     raw_output_p = output / "raw_rttm"
-
-    if thresholds is not None and Path(thresholds).exists():
-        with Path(thresholds).open("r") as f:
-            threshold_dict = yaml.safe_load(f)
-        print(f"[log] - Treshold loaded: {threshold_dict}")
-    else:
-        threshold_dict = None
-
-    if not wavs.exists():
-        raise ValueError(f"Path `{wavs=}` does not exists")
-    if not checkpoint.exists():
-        raise ValueError(f"Path `{checkpoint=}` does not exists")
-
-    cfg: Config = load_config(config)
-
-    l_encoder = MultiLabelEncoder(labels=cfg.data.classes)
-
-    model = Models[cfg.model.name].load_from_checkpoint(
-        checkpoint_path=checkpoint, label_encoder=l_encoder, config=cfg, train=False
-    )
-
-    # NOTE - get device
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    elif torch.backends.mps.is_available():
-        device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
-    model.to(device)
-
-    model = torch.compile(model)
-
-    # NOTE if uris: path is known
-    if uris:
-        with Path(uris).open("r") as uri_f:
-            uris = [uri.strip() for uri in uri_f.readlines()]
-        n_files = len(uris)
-        for i, uri in enumerate(uris):
-            wav_f = (wavs / uri).with_suffix(".wav")
-            print(
-                f"[log] - ({i:>{len(str(n_files))}}/{n_files}) - running inference for file: '{wav_f.stem}'"
-            )
-            sliding_prediction(
-                wav_f,
-                model=model,
-                output_p=output,
-                config=cfg,
-                save_logits=save_logits,
-                thresholds=threshold_dict,
-            )
-    else:
-        if wavs.suffix == ".wav" and wavs.is_file():
-            wav_files = [wavs]
-        else:
-            wav_files = list(wavs.glob("*.wav"))
-        n_files = len(wav_files)
-        for i, wav_f in enumerate(wav_files):
-            print(
-                f"[log] - ({i:>{len(str(n_files))}}/{n_files}) - running inference for file: '{wav_f.stem}'"
-            )
-            sliding_prediction(
-                wav_f,
-                model=model,
-                output_p=output,
-                config=cfg,
-                save_logits=save_logits,
-                thresholds=threshold_dict,
-            )
 
     # TODO - warning when file not found but do not fail please
     # NOTE - merge RTTMs
@@ -267,6 +203,11 @@ if __name__ == "__main__":
         "--min-duration-off-s",
         default=0.1,
         help="Fill same-speaker gaps shorter than that many seconds.",
+    )
+    parser.add_argument(
+        "--batch_size",
+        default=128,
+        help="Batch size to use for the forward pass of the model.",
     )
 
     args = parser.parse_args()
