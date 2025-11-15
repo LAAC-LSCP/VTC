@@ -1,19 +1,44 @@
 # VTC 2.0 Evaluation
 
 ## Runtime
-The model has been tested on a Nvidia H100 NVL with 94 GB of VRAM and an AMD EPYC 9334 CPU.
+We tested the inference pipeline on multiple GPUs and CPUs and display the expected speedup factors that can be used to estimate the total duration needed to process $x$ hours of audio.
 
-| Batch size | GPU   | CPU   |
-|:----------:|:-----:|:-----:|
-| 128        | 1/13  | -     |
+<table>
+<tr><th>Table 1: GPU times </th><th>Table 2: CPU times</th></tr>
+<tr><td>
 
+| Batch size | Hardware        | Speedup factor |
+|:----------:|:----------------|:--------------:|
+| 64         | Quadro RTX 8000 | 1/152          |
+| 128        | Quadro RTX 8000 | 1/286          |
+| 256        | Quadro RTX 8000 | 1/531          |
+| 64         | A40             | 1/450          |
+| 128        | A40             | 1/358          |
+| 256        | A40             | 1/650          |
+| 64         | H100            | 1/182          |
+| 128        | H100            | 1/466          |
+| 256        | H100            | **1/905**      |
 
-<!-- 297353 seconds in 22612.4552 s -->
-It takes approximatively $1/13$ of the audio duration to run the model.
-- For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 5$ minutes.
-- For a $16\text{ h}$ longform audio, the model will run for $\approx 1 \text{ hour and } 14 \text{ minutes}$.
+</td><td>
 
+| Batch size | Hardware                      | Speedup factor|
+|:----------:|:------------------------------|:-------------:|
+| 64         | Intel(R) Xeon(R) Silver 4214R | 1/16          |
+| 128        | Intel(R) Xeon(R) Silver 4214R | 1/15          |
+| 256        | Intel(R) Xeon(R) Silver 4214R | 1/16          |
+| 64         | AMD EPYC 7453 28-Core         | 1/20          |
+| 128        | AMD EPYC 7453 28-Core         | 1/21          |
+| 256        | AMD EPYC 7453 28-Core         | 1/22          |
+| 64         | AMD EPYC 9334 32-Core         | 1/25          |
+| 128        | AMD EPYC 9334 32-Core         | 1/26          |
+| 256        | AMD EPYC 9334 32-Core         | **1/29**      |
 
+</td></tr> </table>
+
+<!-- [297353] seconds in 328.475611 s -->
+It takes approximatively $1/905$ of the audio duration to run the model with a batch size of 256 on an H100 GPU.
+- For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 4$ seconds. ($3600 / 905$)
+- For a $16\text{ h}$ longform audio, the inference will run for $\approx 1 \text{ minute}$ and $4 \text{ seconds}$. ($16 * 3600 / 905$)
 
 
 ## Model Performance on the heldout set
