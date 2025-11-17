@@ -144,6 +144,7 @@ def main(
     min_duration_off_s: float = 0.1,
     batch_size: int = 128,
     write_empty: bool = True,
+    write_csv: bool = True,
 ):
     """Run sliding inference on the given files and then merges the created segments.
 
@@ -164,6 +165,8 @@ def main(
         ValueError: _description_
         ValueError: _description_
     """
+    output = Path(output)
+
     processed_files = run_inference_on_audios(
         config=config,
         uris=uris,
@@ -182,6 +185,21 @@ def main(
         write_empty=write_empty,
     )
 
+    # NOTE - write RTTMs to `csv` files
+    if write_csv:
+        # NOTE - Raw RTTMs
+        raw_rttm_file_p = sorted(list((output / "raw_rttm").glob("*.rttm")))
+        raw_rttm_file_dfs = []
+        for rttm_file in raw_rttm_file_p:
+            raw_rttm_file_dfs.append(load_rttm(rttm_file))
+        pl.concat(raw_rttm_file_dfs).write_csv(output / "raw_rttm.csv")
+
+        # NOTE - merged RTTMs
+        rttm_file_p = sorted(list((output / "rttm").glob("*.rttm")))
+        rttm_file_dfs = []
+        for rttm_file in rttm_file_p:
+            rttm_file_dfs.append(load_rttm(rttm_file))
+        pl.concat(rttm_file_dfs).write_csv(output / "rttm.csv")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
