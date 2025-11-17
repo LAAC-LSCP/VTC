@@ -3,7 +3,6 @@ import copy
 from pathlib import Path
 
 import polars as pl
-import tqdm
 from pyannote.core import Annotation, Segment
 from segma.inference import run_inference_on_audios
 
@@ -84,62 +83,25 @@ def process_annot(
     return active
 
 
-def main(
+def merge_segments(
+    file_uris_to_merge: list[str],
     output: str,
-    uris: list[str] | None = None,
-    config: str = "model/config.yml",
-    wavs: str = "data/debug/wav",
-    checkpoint: str = "model/best.ckpt",
-    save_logits: bool = False,
-    thresholds: None | dict = None,
     min_duration_on_s: float = 0.1,
     min_duration_off_s: float = 0.1,
-    batch_size: int = 128,
+    write_empty: bool = True,
 ):
-    """Run sliding inference on the given files and then merges the created segments.
-
-    Args:
-        uris (list[str]): list of uris to use for prediction.
-        config (str, optional): Config file to be loaded and used for inference. Defaults to "model/config.yml".
-        wavs (str, optional): _description_. Defaults to "data/debug/wav".
-        checkpoint (str, optional): Path to a pretrained model checkpoint. Defaults to "model/best.ckpt".
-        output (str, optional): Output Path to the folder that will contain the final predictions.. Defaults to "".
-        save_logits (bool, optional): If the prediction scripts saves the logits to disk, can be memory intensive. Defaults to False.
-        thresholds (None | dict, optional): If thresholds dict is given, perform predictions using thresholding.. Defaults to None.
-        min_duration_on_s (float, optional): Remove speech segments shorter than that many seconds.. Defaults to .1.
-        min_duration_off_s (float, optional): Fill same-speaker gaps shorter than that many seconds.. Defaults to .1.
-        batch_size (int): Batch size to use during inference. Defaults to 128.
-
-    Raises:
-        ValueError: _description_
-        ValueError: _description_
-        ValueError: _description_
-    """
-    run_inference_on_audios(
-        config=config,
-        uris=uris,
-        wavs=wavs,
-        checkpoint=checkpoint,
-        output=output,
-        thresholds=thresholds,
-        batch_size=batch_size,
-    )
     output = Path(output)
     raw_output_p = output / "raw_rttm"
 
-    # TODO - warning when file not found but do not fail please
     # NOTE - merge RTTMs
     uri_to_annot: dict[str, Annotation] = {}
     uri_to_proc_annot: dict[str, Annotation] = {}
     merged_out_p = output / "rttm"
     merged_out_p.mkdir(exist_ok=True, parents=True)
-    for file in tqdm.tqdm(
-        list(raw_output_p.glob("*.rttm")) + list(raw_output_p.glob("*.aa"))
-    ):
-        if not file.exists():
-            import warnings
 
-            warnings.warn(f"File '{file}' does not exist, skipping.")
+    for file_uri in file_uris_to_merge:
+        file = (raw_output_p / file_uri).with_suffix(".rttm")
+        if not file.exists():
             continue
 
         match file.suffix:
@@ -163,6 +125,62 @@ def main(
 
         for uri, annot in uri_to_proc_annot.items():
             (merged_out_p / uri).with_suffix(".rttm").write_text(annot.to_rttm())
+
+    # NOTE - Writting missing rttm files
+    if write_empty:
+        for uri in set(file_uris_to_merge) - set(uri_to_proc_annot.keys()):
+            (merged_out_p / uri).with_suffix(".rttm").touch()
+
+
+def main(
+    output: str,
+    uris: list[str] | None = None,
+    config: str = "model/config.yml",
+    wavs: str = "data/debug/wav",
+    checkpoint: str = "model/best.ckpt",
+    save_logits: bool = False,
+    thresholds: None | dict = None,
+    min_duration_on_s: float = 0.1,
+    min_duration_off_s: float = 0.1,
+    batch_size: int = 128,
+    write_empty: bool = True,
+):
+    """Run sliding inference on the given files and then merges the created segments.
+
+    Args:
+        uris (list[str]): list of uris to use for prediction.
+        config (str, optional): Config file to be loaded and used for inference. Defaults to "model/config.yml".
+        wavs (str, optional): _description_. Defaults to "data/debug/wav".
+        checkpoint (str, optional): Path to a pretrained model checkpoint. Defaults to "model/best.ckpt".
+        output (str, optional): Output Path to the folder that will contain the final predictions.. Defaults to "".
+        save_logits (bool, optional): If the prediction scripts saves the logits to disk, can be memory intensive. Defaults to False.
+        thresholds (None | dict, optional): If thresholds dict is given, perform predictions using thresholding.. Defaults to None.
+        min_duration_on_s (float, optional): Remove speech segments shorter than that many seconds.. Defaults to .1.
+        min_duration_off_s (float, optional): Fill same-speaker gaps shorter than that many seconds.. Defaults to .1.
+        batch_size (int): Batch size to use during inference. Defaults to 128.
+
+    Raises:
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
+    """
+    processed_files = run_inference_on_audios(
+        config=config,
+        uris=uris,
+        wavs=wavs,
+        checkpoint=checkpoint,
+        output=output,
+        thresholds=thresholds,
+        batch_size=batch_size,
+    )
+
+    merge_segments(
+        file_uris_to_merge=[f.stem for f in processed_files],
+        output=output,
+        min_duration_on_s=min_duration_on_s,
+        min_duration_off_s=min_duration_off_s,
+        write_empty=write_empty,
+    )
 
 
 if __name__ == "__main__":
