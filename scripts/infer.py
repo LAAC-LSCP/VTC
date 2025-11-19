@@ -3,6 +3,7 @@ import copy
 from pathlib import Path
 
 import polars as pl
+import torchaudio
 from pyannote.core import Annotation, Segment
 from segma.inference import run_inference_on_audios
 
@@ -132,6 +133,31 @@ def merge_segments(
             (merged_out_p / uri).with_suffix(".rttm").touch()
 
 
+def check_audio_files(uris, wavs) -> None:
+    """Fails if the audios are not sampled at 16_000 Hz and contain more than one channel."""
+    wavs = Path(wavs)
+
+    if uris:
+        with Path(uris).open("r") as uri_f:
+            files_to_infer_on = [
+                (wavs / uri.strip()).with_suffix(".wav") for uri in uri_f.readlines()
+            ]
+    else:
+        files_to_infer_on = list(wavs.glob("*.wav"))
+
+    for wav_p in sorted(files_to_infer_on):
+        info = torchaudio.info(uri=wav_p)
+        # NOTE - check that the audio is valid
+        if not info.sample_rate == 16_000:
+            raise ValueError(
+                f"file `{wav_p}` is not samlped at 16 000 hz. Please convert your audio files."
+            )
+        if not info.num_channels == 1:
+            raise ValueError(
+                f"file `{wav_p}` has more than one channel. You can average your channels or use another channel reduction technique."
+            )
+
+
 def main(
     output: str,
     uris: list[str] | None = None,
@@ -165,6 +191,8 @@ def main(
         ValueError: _description_
         ValueError: _description_
     """
+    check_audio_files(uris, wavs)
+
     output = Path(output)
 
     processed_files = run_inference_on_audios(
@@ -200,6 +228,7 @@ def main(
         for rttm_file in rttm_file_p:
             rttm_file_dfs.append(load_rttm(rttm_file))
         pl.concat(rttm_file_dfs).write_csv(output / "rttm.csv")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
