@@ -11,9 +11,9 @@ The four classes that the model will output are:
 The model has been specifically trained to work with child-centered long-form recordings. These are recordings that can span multiple hours and have been collected using a portable recorder attached to the vest of a child (usually 0 to 5 years of age).
 
 ## Usage
-To use the model, you will need a unix-based machine (Linux or MacOS) and python version 3.13 or a higher installed. Windows is not supported for the moment.
+To use the model, you will need a unix-based machine (Linux or MacOS) and python version 3.13 or higher installed. Windows is not supported for the moment.
 
-You will then need to install the required packages described in the `requirements.txt` file (generated from the `pyproject.toml`) using either pip directly or the [uv](https://docs.astral.sh/uv/) package manager.
+You will then need to install the required packages described in the `requirements.txt` file (generated from the `pyproject.toml`) using either pip or the [uv](https://docs.astral.sh/uv/) package manager.
 As a system dependency, to be able to read audio files ensure that [ffmpeg](https://ffmpeg.org/) is installed.
 
 You can now clone the repo and setup the dependencies:
@@ -21,8 +21,19 @@ You can now clone the repo and setup the dependencies:
 ```bash
 git clone https://github.com/LAAC-LSCP/VTC.git
 cd VTC
+```
 
+### Installing dependencies with uv (recommended)
+
+```bash
 uv sync # or pip install -r requirements.txt
+```
+### Installing dependencies with pip and python 3.13 or higher (not recommended)
+```bash
+python -m venv .venv
+source .venv/bin/activate
+
+pip install -r requirements.txt
 ```
 
 ### Inference
@@ -30,7 +41,6 @@ uv sync # or pip install -r requirements.txt
 Inference is done using a checkpoint of the model, linking the corresponding config file used for training and the list of audio files to run the model on. You audio files should be in the `.wav` format, sampled at 16 000 kHz and contain a single channel (mono).
 If not, you can use the `scripts/convert.py` file to convert your audios to 16 000 Hz and average the channels.
 
-For more fine-grained tuning, use the `min-duration-on-s` and `min-duration-off-s` parameters.
 
 ```bash
 uv run scripts/infer.py \
