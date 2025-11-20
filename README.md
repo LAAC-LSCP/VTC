@@ -133,8 +133,8 @@ As displayed in table 1, our model performs better than previous iterations with
 - **SIL**: are the section with silence/noise.
 
 <p float="left" align="middle">
-  <img src="figures/bbh_heldout_full_cm_precision.png" width="400"/>
-  <img src="figures/bbh_heldout_full_cm_recall.png" width="400"/> 
+  <img src="figures/vtc2_heldout_full_cm_precision.png" width="400"/>
+  <img src="figures/vtc2_heldout_full_cm_recall.png" width="400"/> 
 </p>
 
 ---
