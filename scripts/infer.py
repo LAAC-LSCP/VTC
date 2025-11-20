@@ -1,11 +1,12 @@
 import argparse
 import copy
 from pathlib import Path
+from typing import Literal
 
 import polars as pl
 import torchaudio
 from pyannote.core import Annotation, Segment
-from segma.inference import run_inference_on_audios
+from segma.inference import get_list_of_files_to_process, run_inference_on_audios
 
 
 def load_aa(path: Path):
@@ -133,19 +134,10 @@ def merge_segments(
             (merged_out_p / uri).with_suffix(".rttm").touch()
 
 
-def check_audio_files(uris, wavs) -> None:
+def check_audio_files(audio_files_to_process: list[Path]) -> None:
     """Fails if the audios are not sampled at 16_000 Hz and contain more than one channel."""
-    wavs = Path(wavs)
 
-    if uris:
-        with Path(uris).open("r") as uri_f:
-            files_to_infer_on = [
-                (wavs / uri.strip()).with_suffix(".wav") for uri in uri_f.readlines()
-            ]
-    else:
-        files_to_infer_on = list(wavs.glob("*.wav"))
-
-    for wav_p in sorted(files_to_infer_on):
+    for wav_p in audio_files_to_process:
         info = torchaudio.info(uri=wav_p)
         # NOTE - check that the audio is valid
         if not info.sample_rate == 16_000:
@@ -160,7 +152,7 @@ def check_audio_files(uris, wavs) -> None:
 
 def main(
     output: str,
-    uris: list[str] | None = None,
+    uris: Path | None = None,
     config: str = "model/config.yml",
     wavs: str = "data/debug/wav",
     checkpoint: str = "model/best.ckpt",
@@ -171,6 +163,8 @@ def main(
     batch_size: int = 128,
     write_empty: bool = True,
     write_csv: bool = True,
+    recursive_search: bool = False,
+    device: Literal["gpu", "cuda", "cpu", "mps"] = "gpu",
 ):
     """Run sliding inference on the given files and then merges the created segments.
 
@@ -191,7 +185,9 @@ def main(
         ValueError: _description_
         ValueError: _description_
     """
-    check_audio_files(uris, wavs)
+    check_audio_files(
+        get_list_of_files_to_process(Path(wavs), recursive_search, uris)[0]
+    )
 
     output = Path(output)
 
@@ -203,6 +199,8 @@ def main(
         output=output,
         thresholds=thresholds,
         batch_size=batch_size,
+        device=device,
+        recursive=recursive_search,
     )
 
     merge_segments(
@@ -238,7 +236,9 @@ if __name__ == "__main__":
         default="model/config.yml",
         help="Config file to be loaded and used for inference.",
     )
-    parser.add_argument("--uris", help="list of uris to use for prediction")
+    parser.add_argument(
+        "--uris", help="Path to a file containing the list of uris to use."
+    )
     parser.add_argument("--wavs", default="data/debug/wav")
     parser.add_argument(
         "--checkpoint",
@@ -262,17 +262,31 @@ if __name__ == "__main__":
     parser.add_argument(
         "--min-duration-on-s",
         default=0.1,
+        type=float,
         help="Remove speech segments shorter than that many seconds.",
     )
     parser.add_argument(
         "--min-duration-off-s",
         default=0.1,
+        type=float,
         help="Fill same-speaker gaps shorter than that many seconds.",
     )
     parser.add_argument(
         "--batch_size",
         default=128,
+        type=int,
         help="Batch size to use for the forward pass of the model.",
+    )
+    parser.add_argument(
+        "--recursive_search",
+        action="store_true",
+        help="Recursively search for `.wav` files. Might be slow. Defaults to False.",
+    )
+    parser.add_argument(
+        "--device",
+        default="cuda",
+        choices=["gpu", "cuda", "cpu", "mps"],
+        help="Size of the batch used for the forward pass in the model.",
     )
 
     args = parser.parse_args()

@@ -1688,7 +1688,7 @@ wheels = [
 [[package]]
 name = "segma"
 version = "0.1.0"
-source = { git = "https://github.com/arxaqapi/segma?rev=492a07bb34e424c8a89b0a4e28423271f8b258a7#492a07bb34e424c8a89b0a4e28423271f8b258a7" }
+source = { git = "https://github.com/arxaqapi/segma?rev=e5066580134213e1bc881e0c607b850833ac6b0d#e5066580134213e1bc881e0c607b850833ac6b0d" }
 dependencies = [
     { name = "asteroid-filterbanks" },
     { name = "dacite" },
@@ -2159,7 +2159,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "pyannote-audio", specifier = ">=3.4.0" },
-    { name = "segma", git = "https://github.com/arxaqapi/segma?rev=492a07bb34e424c8a89b0a4e28423271f8b258a7" },
+    { name = "segma", git = "https://github.com/arxaqapi/segma?rev=e5066580134213e1bc881e0c607b850833ac6b0d" },
     { name = "tqdm", specifier = ">=4.67.1" },
 ]
 

@@ -11,4 +11,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-segma = { git = "https://github.com/arxaqapi/segma", rev = "492a07bb34e424c8a89b0a4e28423271f8b258a7" }
+segma = { git = "https://github.com/arxaqapi/segma", rev = "e5066580134213e1bc881e0c607b850833ac6b0d" }
