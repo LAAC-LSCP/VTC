@@ -10,6 +10,13 @@ The four classes that the model will output are:
 
 The model has been specifically trained to work with child-centered long-form recordings. These are recordings that can span multiple hours and have been collected using a portable recorder attached to the vest of a child (usually 0 to 5 years of age).
 
+## Table of content
+
+1. [Usage](#usage)
+2. [Model Performance](#model-performance)
+3. [Citation](#citation)
+4. [Acknowledgement](#acknowledgement)
+
 ## Usage
 To use the model, you will need a unix-based machine (Linux or MacOS) and python version 3.13 or higher installed. Windows is not supported for the moment.
 
@@ -44,8 +51,9 @@ If not, you can use the `scripts/convert.py` file to convert your audios to 16 0
 
 ```bash
 uv run scripts/infer.py \
-    --wavs audios \      # path to the folder containing the audio files
-    --output predictions # output folder
+    --wavs audios \        # path to the folder containing the audio files
+    --output predictions \ # output folder
+    --device cpu           # device to run the model on: ('cpu', 'cuda' or 'gpu', 'mps')
 ```
 
 The output of the model (with segment merging applied, see [this pyannote.audio description](https://github.com/pyannote/pyannote-audio/blob/240a7f3ef60bc613169df860b536b10e338dbf3c/pyannote/audio/pipelines/resegmentation.py#L79-L82)) will be in `<output_folder>/rttm`. The raw outputs without segment merging applied are present in `<output_folder>/raw_rttm`.
@@ -58,7 +66,7 @@ An example of a bash script is given to perform inference in `scripts/run.sh`. S
 sh scripts/run.sh
 ````
 
-## Model Evaluation
+## Model Performance
 ### Runtime
 We tested the inference pipeline on multiple GPUs and CPUs and display the expected speedup factors that can be used to estimate the total duration needed to process $x$ hours of audio.
 
@@ -99,21 +107,26 @@ It takes approximatively $1/905$ of the audio duration to run the model with a b
 - For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 4$ seconds. ($3600 / 905$)
 - For a $16\text{ h}$ longform audio, the inference will run for $\approx 1 \text{ minute}$ and $4 \text{ seconds}$. ($16 * 3600 / 905$)
 
+
+On a Intel(R) Xeon(R) Silver 4214R CPU with a batch size of 64, the inference pipeline will be quite slow:
+- For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 4$ minutes. ($3600 / 15$)
+- For a $16\text{ h}$ longform audio, the inference will run for $\approx 1 \text{ hour}$ and $4 \text{ minutes}$. ($16 * 3600 / 15$)
+
 ### Model Performance on the heldout set
 
-We evaluate the new model, BabyHuBERT-VTC, on a heldout set and compare it to the previous models and the Human performance (Human 2).
+We evaluate the new model, VTC 2.0, on a heldout set and compare it to the previous models and the Human performance (Human 2).
 
 | Model          | KCHI |  OCH |  MAL |  FEM | F1-score |
 |----------------|:----:|:----:|:----:|:----:|:--------:|
-| Human 2        | 79.7 | 60.4 | 67.6 | 71.5 |   69.8   |
-| PyanNet-VTC    | 68.2 | 30.5 | 41.2 | 63.7 |   50.9   |
-| Whisper-VTC    | 68.4 | 20.6 | 56.7 | 68.9 |   53.6   |
-| BabyHuBERT-VTC | 71.8 | 51.4 | 60.3 | 74.8 |   64.6   |
+| Human 2        | **79.7** | **60.4** | 67.6 | **71.5** |   **69.8**   |
+| VTC 1.0        | 68.2 | 30.5 | 41.2 | 63.7 |   50.9   |
+| VTC 1.5        | 68.4 | 20.6 | 56.7 | 68.9 |   53.6   |
+| VTC 2.0        | 71.8 | 51.4 | 60.3 | **74.8** | 64.6 |
 
 **Table 1**: F1-scores (%) obtained on the standard test set by
-PyanNet-VTC, Whisper-VTC, a second human annotator (Human 2) and the **best BabyHuBERT-VTC** model.
+VTC 1.0, VTC 1.5, a second human annotator (Human 2) and VTC 2.0.
 
-As displayed in table 1, our model performs better than previous iterations with performances close to the Human performances. BabyHuBERT-VTC even surpasses human like performance on the **FEM** class.
+As displayed in table 1, our model performs better than previous iterations with performances close to the Human performances. VTC 2.0 even surpasses human like performance on the **FEM** class.
 
 ### Confusion Matrices on the heldout set
 - **OVL**: is the overlap between speakers.
@@ -172,3 +185,5 @@ GitHub repository: [github.com/MarvinLvn/voice-type-classifier](https://github.c
 ```
 
 This work uses the [segma](https://github.com/arxaqapi/segma) library which is heavely inspired by [pyannote.audio](https://github.com/pyannote/pyannote-audio).
+
+This work was performed using HPC resources from GENCI-IDRIS (Grant 2024-AD011015450 and 2025-AD011016414) and was developed as part of the ExELang project funded by the European Union (ERC, ExELang, Grant No 101001095).
