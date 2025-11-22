@@ -116,15 +116,15 @@ On a Intel(R) Xeon(R) Silver 4214R CPU with a batch size of 64, the inference pi
 
 We evaluate the new model, VTC 2.0, on a heldout set and compare it to the previous models and the Human performance (Human 2).
 
-| Model          | KCHI |  OCH |  MAL |  FEM | F1-score |
+| Model          | KCHI |  OCH |  MAL |  FEM | Average F1-score |
 |----------------|:----:|:----:|:----:|:----:|:--------:|
-| Human 2        | **79.7** | **60.4** | 67.6 | **71.5** |   **69.8**   |
 | VTC 1.0        | 68.2 | 30.5 | 41.2 | 63.7 |   50.9   |
 | VTC 1.5        | 68.4 | 20.6 | 56.7 | 68.9 |   53.6   |
-| VTC 2.0        | 71.8 | 51.4 | 60.3 | **74.8** | 64.6 |
+| VTC 2.0        | **71.8** | **51.4** | **60.3** | **74.8** | **64.6** |
+| Human 2        | 79.7 | 60.4 | 67.6 | 71.5 |   69.8   |
 
-**Table 1**: F1-scores (%) obtained on the standard test set by
-VTC 1.0, VTC 1.5, a second human annotator (Human 2) and VTC 2.0.
+**Table 1**: F1-scores (%) obtained on the standard test set VTC 1.0, VTC 1.5, VTC 2.0, and a second human annotator.
+The best model is indicated in bold.
 
 As displayed in table 1, our model performs better than previous iterations with performances close to the Human performances. VTC 2.0 even surpasses human like performance on the **FEM** class.
 
