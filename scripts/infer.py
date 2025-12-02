@@ -25,7 +25,7 @@ def load_aa(path: Path):
     return data
 
 
-def load_rttm(path: Path | str):
+def load_rttm(path: Path | str) -> pl.DataFrame:
     try:
         data = pl.read_csv(
             source=path,
@@ -153,9 +153,9 @@ def check_audio_files(audio_files_to_process: list[Path]) -> None:
 def main(
     output: str,
     uris: Path | None = None,
-    config: str = "model/config.yml",
+    config: str = "VTC-2.0/model/config.yml",
     wavs: str = "data/debug/wav",
-    checkpoint: str = "model/best.ckpt",
+    checkpoint: str = "VTC-2.0/model/best.ckpt",
     save_logits: bool = False,
     thresholds: None | dict = None,
     min_duration_on_s: float = 0.1,
@@ -170,9 +170,9 @@ def main(
 
     Args:
         uris (list[str]): list of uris to use for prediction.
-        config (str, optional): Config file to be loaded and used for inference. Defaults to "model/config.yml".
+        config (str, optional): Config file to be loaded and used for inference. Defaults to "VTC-2.0/model/config.yml".
         wavs (str, optional): _description_. Defaults to "data/debug/wav".
-        checkpoint (str, optional): Path to a pretrained model checkpoint. Defaults to "model/best.ckpt".
+        checkpoint (str, optional): Path to a pretrained model checkpoint. Defaults to "VTC-2.0/model/best.ckpt".
         output (str, optional): Output Path to the folder that will contain the final predictions.. Defaults to "".
         save_logits (bool, optional): If the prediction scripts saves the logits to disk, can be memory intensive. Defaults to False.
         thresholds (None | dict, optional): If thresholds dict is given, perform predictions using thresholding.. Defaults to None.
@@ -233,7 +233,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config",
         type=str,
-        default="model/config.yml",
+        default="VTC-2.0/model/config.yml",
         help="Config file to be loaded and used for inference.",
     )
     parser.add_argument(
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     parser.add_argument("--wavs", default="data/debug/wav")
     parser.add_argument(
         "--checkpoint",
-        default="model/best.ckpt",
+        default="VTC-2.0/model/best.ckpt",
         help="Path to a pretrained model checkpoint.",
     )
     parser.add_argument(

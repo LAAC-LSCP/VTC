@@ -1,0 +1,3 @@
+[submodule "VTC-2.0"]
+	path = VTC-2.0
+	url = https://huggingface.co/coml/VTC-2.0
