@@ -21,19 +21,20 @@ The model has been specifically trained to work with child-centered long-form re
 To use the model, you will need a unix-based machine (Linux or MacOS) and python version 3.13 or higher installed. Windows is not supported for the moment.
 
 You will then need to install the required packages described in the `requirements.txt` file (generated from the `pyproject.toml`) using either pip or the [uv](https://docs.astral.sh/uv/) package manager.
-As a system dependency, to be able to read audio files ensure that [ffmpeg](https://ffmpeg.org/) is installed.
+
+As system dependencies, ensure that [ffmpeg](https://ffmpeg.org/) and [git-lfs](https://git-lfs.com/) are installed.
 
 You can now clone the repo and setup the dependencies:
 
 ```bash
-git clone https://github.com/LAAC-LSCP/VTC.git
+git clone --recurse-submodules https://github.com/LAAC-LSCP/VTC.git
 cd VTC
 ```
 
 ### Installing dependencies with uv (recommended)
 
 ```bash
-uv sync # or pip install -r requirements.txt
+uv sync
 ```
 ### Installing dependencies with pip and python 3.13 or higher (not recommended)
 ```bash
