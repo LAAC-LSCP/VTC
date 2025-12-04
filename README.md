@@ -27,6 +27,7 @@ As system dependencies, ensure that [ffmpeg](https://ffmpeg.org/) and [git-lfs](
 You can now clone the repo and setup the dependencies:
 
 ```bash
+git lfs install
 git clone --recurse-submodules https://github.com/LAAC-LSCP/VTC.git
 cd VTC
 ```
