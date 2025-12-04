@@ -12,11 +12,11 @@ The model has been specifically trained to work with child-centered long-form re
 
 ## 0. Table of content
 
-1. [Installation](#installation)
-2. [Inference](#inference)
-2. [Model Performance](#model-performance)
-3. [Citation](#citation)
-4. [Acknowledgement](#acknowledgement)
+1. [Installation](#1-installation)
+2. [Inference](#2-inference)
+3. [Model Performance](#3-model-performance)
+4. [Citation](#4-citation)
+5. [Acknowledgement](#5-acknowledgement)
 
 ## 1. Installation
 
