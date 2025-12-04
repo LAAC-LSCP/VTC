@@ -10,21 +10,24 @@ The four classes that the model will output are:
 
 The model has been specifically trained to work with child-centered long-form recordings. These are recordings that can span multiple hours and have been collected using a portable recorder attached to the vest of a child (usually 0 to 5 years of age).
 
-## Table of content
+## 0. Table of content
 
-1. [Usage](#usage)
+1. [Installation](#installation)
+2. [Inference](#inference)
 2. [Model Performance](#model-performance)
 3. [Citation](#citation)
 4. [Acknowledgement](#acknowledgement)
 
-## Usage
+## 1. Installation
+
 To use the model, you will need a unix-based machine (Linux or MacOS) and python version 3.13 or higher installed. Windows is not supported for the moment.
+As system dependencies, ensure that [uv](https://docs.astral.sh/uv/), [ffmpeg](https://ffmpeg.org/), and [git-lfs](https://git-lfs.com/) are installed. You can check that by running:
 
-You will then need to install the required packages described in the `requirements.txt` file (generated from the `pyproject.toml`) using either pip or the [uv](https://docs.astral.sh/uv/) package manager.
+```bash
+./check_sys_dependencies.sh
+```
 
-As system dependencies, ensure that [ffmpeg](https://ffmpeg.org/) and [git-lfs](https://git-lfs.com/) are installed.
-
-You can now clone the repo and setup the dependencies:
+You can now clone the repo with:
 
 ```bash
 git lfs install
@@ -32,20 +35,22 @@ git clone --recurse-submodules https://github.com/LAAC-LSCP/VTC.git
 cd VTC
 ```
 
-### Installing dependencies with uv (recommended)
+Finally, you can install python dependencies with the following command (recommended):
 
 ```bash
 uv sync
 ```
-### Installing dependencies with pip and python 3.13 or higher (not recommended)
+
+Alternatively, you can also isntall python dependencies using pip and python 3.13 or higher (not recommended):
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-
 pip install -r requirements.txt
 ```
 
-### Inference
+
+## 2. Inference
 
 Inference is done using a checkpoint of the model, linking the corresponding config file used for training and the list of audio files to run the model on. You audio files should be in the `.wav` format, sampled at 16 000 kHz and contain a single channel (mono).
 If not, you can use the `scripts/convert.py` file to convert your audios to 16 000 Hz and average the channels.
@@ -59,17 +64,18 @@ uv run scripts/infer.py \
 ```
 
 The output of the model (with segment merging applied, see [this pyannote.audio description](https://github.com/pyannote/pyannote-audio/blob/240a7f3ef60bc613169df860b536b10e338dbf3c/pyannote/audio/pipelines/resegmentation.py#L79-L82)) will be in `<output_folder>/rttm`. The raw outputs without segment merging applied are present in `<output_folder>/raw_rttm`.
-Additionaly a CSV version of the detected speecker segments is created in `<output_folder>/rttm.csv` and `<output_folder>/raw_rttm.csv`.
+Additionaly a CSV version of the detected speaker segments is created in `<output_folder>/rttm.csv` and `<output_folder>/raw_rttm.csv`.
 
-### Helper script
+#### Helper script
 An example of a bash script is given to perform inference in `scripts/run.sh`. Simply set the correct variables in the script and run it:
 
 ```bash
 sh scripts/run.sh
 ````
 
-## Model Performance
-### Runtime
+## 3. Model Performance
+
+### 3.1 Runtime
 We tested the inference pipeline on multiple GPUs and CPUs and display the expected speedup factors that can be used to estimate the total duration needed to process $x$ hours of audio.
 
 <table>
@@ -114,7 +120,7 @@ On a Intel(R) Xeon(R) Silver 4214R CPU with a batch size of 64, the inference pi
 - For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 4$ minutes. ($3600 / 15$)
 - For a $16\text{ h}$ longform audio, the inference will run for $\approx 1 \text{ hour}$ and $4 \text{ minutes}$. ($16 * 3600 / 15$)
 
-### Model Performance on the heldout set
+### 3.2 Model Performance on the heldout set
 
 We evaluate the new model, VTC 2.0, on a heldout set and compare it to the previous models and the Human performance (Human 2).
 
@@ -130,7 +136,7 @@ The best model is indicated in bold.
 
 As displayed in table 1, our model performs better than previous iterations with performances close to the Human performances. VTC 2.0 even surpasses human like performance on the **FEM** class.
 
-### Confusion Matrices on the heldout set
+### 3.3 Confusion Matrices on the heldout set
 - **OVL**: is the overlap between speakers.
 - **SIL**: are the section with silence/noise.
 
@@ -140,7 +146,7 @@ As displayed in table 1, our model performs better than previous iterations with
 </p>
 
 ---
-## Citation
+## 4. Citation
 To cite this work, please use the following bibtex.
 
 ```bibtex
@@ -155,10 +161,10 @@ To cite this work, please use the following bibtex.
 }
 ```
 
-## Acknowledgement
+## 5. Acknowledgement
 The Voice Type Classifier has benefited from numerous contributions over time, following publications document its evolution, listed in reverse chronological order.
 
-#### 1. VTC 1.5 (Whisper-VTC)
+### VTC 1.5 (Whisper-VTC)
 GitHub repository: [github.com/LAAC-LSCP/VTC-IS-25](https://github.com/LAAC-LSCP/VTC-IS-25)
 ```bibtex
 @inproceedings{kunze25_interspeech,
@@ -172,7 +178,7 @@ GitHub repository: [github.com/LAAC-LSCP/VTC-IS-25](https://github.com/LAAC-LSCP
 }
 ```
 
-#### 2. VTC 1.0 (PyanNet-VTC)
+### VTC 1.0 (PyanNet-VTC)
 GitHub repository: [github.com/MarvinLvn/voice-type-classifier](https://github.com/MarvinLvn/voice-type-classifier)
 ```bibtex
 @inproceedings{lavechin20_interspeech,
