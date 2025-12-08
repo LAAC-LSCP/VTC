@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Literal
 
 import polars as pl
-import torchaudio
 from pyannote.core import Annotation, Segment
 from segma.inference import get_list_of_files_to_process, run_inference_on_audios
+from segma.utils.io import get_audio_info
 
 
 def load_aa(path: Path):
@@ -138,13 +138,13 @@ def check_audio_files(audio_files_to_process: list[Path]) -> None:
     """Fails if the audios are not sampled at 16_000 Hz and contain more than one channel."""
 
     for wav_p in audio_files_to_process:
-        info = torchaudio.info(uri=wav_p)
+        info = get_audio_info(wav_p)
         # NOTE - check that the audio is valid
         if not info.sample_rate == 16_000:
             raise ValueError(
                 f"file `{wav_p}` is not samlped at 16 000 hz. Please convert your audio files."
             )
-        if not info.num_channels == 1:
+        if not info.n_channels == 1:
             raise ValueError(
                 f"file `{wav_p}` has more than one channel. You can average your channels or use another channel reduction technique."
             )
@@ -201,6 +201,7 @@ def main(
         batch_size=batch_size,
         device=device,
         recursive=recursive_search,
+        save_logits=save_logits,
     )
 
     merge_segments(
