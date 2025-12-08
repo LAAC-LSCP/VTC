@@ -252,7 +252,7 @@ if __name__ == "__main__":
         help="Output Path to the folder that will contain the final predictions.",
     )
     parser.add_argument(
-        "--save-logits",
+        "--save_logits",
         action="store_true",
         help="If the prediction scripts saves the logits to disk, can be memory intensive.",
     )
@@ -261,13 +261,13 @@ if __name__ == "__main__":
         help="If thresholds dict is given, perform predictions using thresholding.",
     )
     parser.add_argument(
-        "--min-duration-on-s",
+        "--min_duration_on_s",
         default=0.1,
         type=float,
         help="Remove speech segments shorter than that many seconds.",
     )
     parser.add_argument(
-        "--min-duration-off-s",
+        "--min_duration_off_s",
         default=0.1,
         type=float,
         help="Fill same-speaker gaps shorter than that many seconds.",
