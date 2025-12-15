@@ -63,8 +63,19 @@ uv run scripts/infer.py \
     --device cpu           # device to run the model on: ('cpu', 'cuda' or 'gpu', 'mps')
 ```
 
-The output of the model (with segment merging applied, see [this pyannote.audio description](https://github.com/pyannote/pyannote-audio/blob/240a7f3ef60bc613169df860b536b10e338dbf3c/pyannote/audio/pipelines/resegmentation.py#L79-L82)) will be in `<output_folder>/rttm`. The raw outputs without segment merging applied are present in `<output_folder>/raw_rttm`.
-Additionaly a CSV version of the detected speaker segments is created in `<output_folder>/rttm.csv` and `<output_folder>/raw_rttm.csv`.
+The model outputs are saved to `<output_folder>/` with the following structure:
+
+```txt
+<output_folder>/
+│
+├── 📂 rttm/          # Final output (with segment merging applied)
+├── 📂 raw_rttm/      # Raw output (without segment merging)
+├── 📄 rttm.csv       # CSV version of final speaker segments
+└── 📄 raw_rttm.csv   # CSV version of raw speaker segments
+```
+
+> [!NOTE]
+> Segment merging is applied to the main output. See the [pyannote.audio description](https://github.com/pyannote/pyannote-audio/blob/240a7f3ef60bc613169df860b536b10e338dbf3c/pyannote/audio/pipelines/resegmentation.py#L79-L82) for details.
 
 #### Helper script
 An example of a bash script is given to perform inference in `scripts/run.sh`. Simply set the correct variables in the script and run it:
