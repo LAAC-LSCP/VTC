@@ -1,5 +1,6 @@
 import argparse
 import copy
+import shutil
 from pathlib import Path
 from typing import Literal
 
@@ -157,7 +158,7 @@ def main(
     wavs: str = "data/debug/wav",
     checkpoint: str = "VTC-2.0/model/best.ckpt",
     save_logits: bool = False,
-    thresholds: None | dict = None,
+    thresholds: None | Path = None,
     min_duration_on_s: float = 0.1,
     min_duration_off_s: float = 0.1,
     batch_size: int = 128,
@@ -175,7 +176,7 @@ def main(
         checkpoint (str, optional): Path to a pretrained model checkpoint. Defaults to "VTC-2.0/model/best.ckpt".
         output (str, optional): Output Path to the folder that will contain the final predictions.. Defaults to "".
         save_logits (bool, optional): If the prediction scripts saves the logits to disk, can be memory intensive. Defaults to False.
-        thresholds (None | dict, optional): If thresholds dict is given, perform predictions using thresholding.. Defaults to None.
+        thresholds (None | Path, optional): Path to a thresholds dict, perform predictions using thresholding. Defaults to None.
         min_duration_on_s (float, optional): Remove speech segments shorter than that many seconds.. Defaults to .1.
         min_duration_off_s (float, optional): Fill same-speaker gaps shorter than that many seconds.. Defaults to .1.
         batch_size (int): Batch size to use during inference. Defaults to 128.
@@ -185,9 +186,9 @@ def main(
         ValueError: _description_
         ValueError: _description_
     """
-    check_audio_files(
-        get_list_of_files_to_process(Path(wavs), recursive_search, uris)[0]
-    )
+    if thresholds:
+        shutil.copy(str(thresholds), dst=output)
+        print(f"[log] - using thresholds: {thresholds}")
 
     output = Path(output)
 
@@ -258,6 +259,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--thresholds",
+        type=Path,
         help="If thresholds dict is given, perform predictions using thresholding.",
     )
     parser.add_argument(
