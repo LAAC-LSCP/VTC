@@ -1,5 +1,6 @@
 import argparse
 import copy
+import logging
 import shutil
 from pathlib import Path
 from typing import Literal
@@ -8,6 +9,13 @@ import polars as pl
 from pyannote.core import Annotation, Segment
 from segma.inference import get_list_of_files_to_process, run_inference_on_audios
 from segma.utils.io import get_audio_info
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] [%(levelname)s] - %(message)s",
+    datefmt="%Y.%m.%d %H:%M:%S",
+)
+logger = logging.getLogger("inference")
 
 
 def load_aa(path: Path):
@@ -190,10 +198,11 @@ def main(
     """
     if thresholds:
         shutil.copy(str(thresholds), dst=output)
-        print(f"[log] - using thresholds: {thresholds}")
+        logger.info(f"Using thresholds: {thresholds}")
 
     output = Path(output)
 
+    logger.info("Running inference on audio files.")
     processed_files = run_inference_on_audios(
         config=config,
         uris=uris,
@@ -205,8 +214,10 @@ def main(
         device=device,
         recursive=recursive_search,
         save_logits=save_logits,
+        logger=logger,
     )
 
+    logger.info("Merging detected speech segments.")
     merge_segments(
         file_uris_to_merge=[f.stem for f in processed_files],
         output=output,
@@ -235,6 +246,8 @@ def main(
         for rttm_file in rttm_file_p:
             rttm_file_dfs.append(load_rttm(rttm_file))
         pl.concat(rttm_file_dfs).write_csv(output / "rttm.csv")
+
+    logger.info(f"Inference finished, files can be found here: '{output.absolute()}/'")
 
 
 if __name__ == "__main__":
