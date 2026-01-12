@@ -103,7 +103,7 @@ def merge_segments(
     merged_out_p.mkdir(exist_ok=True, parents=True)
 
     for file_uri in file_uris_to_merge:
-        file = (raw_output_p / file_uri).with_suffix(".rttm")
+        file = (raw_output_p / f"{file_uri}.rttm")
         if not file.exists():
             continue
 
@@ -127,12 +127,12 @@ def merge_segments(
             )
 
         for uri, annot in uri_to_proc_annot.items():
-            (merged_out_p / uri).with_suffix(".rttm").write_text(annot.to_rttm())
+            (merged_out_p / f"{uri}.rttm").write_text(annot.to_rttm())
 
     # NOTE - Writting missing rttm files
     if write_empty:
         for uri in set(file_uris_to_merge) - set(uri_to_proc_annot.keys()):
-            (merged_out_p / uri).with_suffix(".rttm").touch()
+            (merged_out_p / f"{uri}.rttm").touch()
 
 
 def check_audio_files(audio_files_to_process: list[Path]) -> None:
@@ -241,7 +241,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--uris", help="Path to a file containing the list of uris to use."
     )
-    parser.add_argument("--wavs", default="data/debug/wav")
+    parser.add_argument(
+        "--wavs",
+        default="data/debug/wav",
+        help="Folder containing the audio files to run inference on."
+    )
     parser.add_argument(
         "--checkpoint",
         default="VTC-2.0/model/best.ckpt",

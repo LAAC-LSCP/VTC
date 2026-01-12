@@ -1696,7 +1696,7 @@ wheels = [
 [[package]]
 name = "segma"
 version = "0.1.0"
-source = { git = "https://github.com/arxaqapi/segma?rev=b2577c8e6c65dca473c3b83e130ee6a78eaf3b64#b2577c8e6c65dca473c3b83e130ee6a78eaf3b64" }
+source = { git = "https://github.com/arxaqapi/segma?rev=f12339c838a46903a1cae355d5e19d522ba1f117#f12339c838a46903a1cae355d5e19d522ba1f117" }
 dependencies = [
     { name = "dacite" },
     { name = "interlap" },
@@ -2195,7 +2195,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "pyannote-audio", specifier = ">=3.4.0" },
-    { name = "segma", git = "https://github.com/arxaqapi/segma?rev=b2577c8e6c65dca473c3b83e130ee6a78eaf3b64" },
+    { name = "segma", git = "https://github.com/arxaqapi/segma?rev=f12339c838a46903a1cae355d5e19d522ba1f117" },
     { name = "tqdm", specifier = ">=4.67.1" },
 ]
 
