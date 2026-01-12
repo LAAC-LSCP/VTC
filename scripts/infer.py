@@ -103,7 +103,7 @@ def merge_segments(
     merged_out_p.mkdir(exist_ok=True, parents=True)
 
     for file_uri in file_uris_to_merge:
-        file = (raw_output_p / f"{file_uri}.rttm")
+        file = raw_output_p / f"{file_uri}.rttm"
         if not file.exists():
             continue
 
@@ -166,6 +166,7 @@ def main(
     write_csv: bool = True,
     recursive_search: bool = False,
     device: Literal["gpu", "cuda", "cpu", "mps"] = "gpu",
+    keep_raw: bool = False,
 ):
     """Run sliding inference on the given files and then merges the created segments.
 
@@ -180,6 +181,7 @@ def main(
         min_duration_on_s (float, optional): Remove speech segments shorter than that many seconds.. Defaults to .1.
         min_duration_off_s (float, optional): Fill same-speaker gaps shorter than that many seconds.. Defaults to .1.
         batch_size (int): Batch size to use during inference. Defaults to 128.
+        keep_raw (bool, optional): If True, keeps the RTTM files before segment merging.
 
     Raises:
         ValueError: _description_
@@ -213,14 +215,19 @@ def main(
         write_empty=write_empty,
     )
 
+    if not keep_raw:
+        # NOTE - remove <output>/raw_rttm
+        shutil.rmtree(str(Path(output / "raw_rttm").absolute()))
+
     # NOTE - write RTTMs to `csv` files
     if write_csv:
-        # NOTE - Raw RTTMs
-        raw_rttm_file_p = sorted(list((output / "raw_rttm").glob("*.rttm")))
-        raw_rttm_file_dfs = []
-        for rttm_file in raw_rttm_file_p:
-            raw_rttm_file_dfs.append(load_rttm(rttm_file))
-        pl.concat(raw_rttm_file_dfs).write_csv(output / "raw_rttm.csv")
+        if keep_raw:
+            # NOTE - Raw RTTMs
+            raw_rttm_file_p = sorted(list((output / "raw_rttm").glob("*.rttm")))
+            raw_rttm_file_dfs = []
+            for rttm_file in raw_rttm_file_p:
+                raw_rttm_file_dfs.append(load_rttm(rttm_file))
+            pl.concat(raw_rttm_file_dfs).write_csv(output / "raw_rttm.csv")
 
         # NOTE - merged RTTMs
         rttm_file_p = sorted(list((output / "rttm").glob("*.rttm")))
@@ -244,7 +251,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--wavs",
         default="data/debug/wav",
-        help="Folder containing the audio files to run inference on."
+        help="Folder containing the audio files to run inference on.",
     )
     parser.add_argument(
         "--checkpoint",
@@ -294,6 +301,11 @@ if __name__ == "__main__":
         default="cuda",
         choices=["gpu", "cuda", "cpu", "mps"],
         help="Size of the batch used for the forward pass in the model.",
+    )
+    parser.add_argument(
+        "--keep_raw",
+        action="store_true",
+        help="If active, the raw RTTM will be kept and saved to disk in the `<output>/raw_rttm/` folder and a `<output>/raw_rttm.csv` file will be created.",
     )
 
     args = parser.parse_args()
