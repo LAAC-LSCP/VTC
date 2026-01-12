@@ -158,6 +158,8 @@ As displayed in table 1, our model performs better than previous iterations with
 
 ---
 ## 4. Citation
+The training code for BabyHuBERT can be found here: [LAAC-LSCP/BabyHuBERT](https://github.com/LAAC-LSCP/BabyHuBERT)
+
 To cite this work, please use the following bibtex.
 
 ```bibtex
