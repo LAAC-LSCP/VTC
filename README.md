@@ -35,18 +35,10 @@ git clone --recurse-submodules https://github.com/LAAC-LSCP/VTC.git
 cd VTC
 ```
 
-Finally, you can install python dependencies with the following command (recommended):
+Finally, you can install python dependencies with the following command:
 
 ```bash
 uv sync
-```
-
-Alternatively, you can also isntall python dependencies using pip and python 3.13 or higher (not recommended):
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 
