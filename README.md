@@ -166,6 +166,11 @@ To cite this work, please use the following bibtex.
 }
 ```
 
+Or the following APA formatted citation
+```APA
+Charlot, T., Kunze, T., Poli, M., Cristia, A., Dupoux, E., & Lavechin, M. (2026). BabyHuBERT: Multilingual Self-Supervised Learning for Segmenting Speakers in Child-Centered Long-Form Recordings. arXiv [Eess.AS]. Retrieved from http://arxiv.org/abs/2509.15001
+```
+
 ## 5. Acknowledgement
 The Voice Type Classifier has benefited from numerous contributions over time, following publications document its evolution, listed in reverse chronological order.
 
