@@ -1,7 +1,7 @@
 [project]
 name = "vtc"
-version = "0.1.0"
-description = "Add your description here"
+version = "2.0.2"
+description = "The inference code for the Voice Type Classifier model"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
