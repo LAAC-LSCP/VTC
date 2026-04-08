@@ -162,9 +162,9 @@ def check_audio_files(audio_files_to_process: list[Path]) -> None:
 def main(
     output: str,
     uris: Path | None = None,
-    config: str = "VTC-2.0/model/config.yml",
+    config: str = "VTC-2/model/config.toml",
     wavs: str = "data/debug/wav",
-    checkpoint: str = "VTC-2.0/model/best.ckpt",
+    checkpoint: str = "VTC-2/model/best.ckpt",
     save_logits: bool = False,
     thresholds: None | Path = None,
     min_duration_on_s: float = 0.1,
