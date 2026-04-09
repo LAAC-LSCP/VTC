@@ -1,6 +1,6 @@
 [project]
 name = "vtc"
-version = "2.0.2"
+version = "2.1.0"
 description = "The inference code for the Voice Type Classifier model"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -11,4 +11,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-segma = { git = "https://github.com/arxaqapi/segma", rev = "ea8a54be363ef3ce15e00a7252eb637dcfaac495" }
+segma = { git = "https://github.com/arxaqapi/segma", rev = "9c398231011a7b16b76cf7be8e99c8b4dbc7ac35" }

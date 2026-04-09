@@ -162,11 +162,12 @@ def check_audio_files(audio_files_to_process: list[Path]) -> None:
 def main(
     output: str,
     uris: Path | None = None,
-    config: str = "VTC-2.0/model/config.yml",
+    config: str = "VTC-2/model/config.toml",
     wavs: str = "data/debug/wav",
-    checkpoint: str = "VTC-2.0/model/best.ckpt",
+    checkpoint: str = "VTC-2/model/best.ckpt",
     save_logits: bool = False,
-    thresholds: None | Path = None,
+    high_precision: bool = False,
+    thresholds: None | Path = Path("thresholds/f1.toml"),
     min_duration_on_s: float = 0.1,
     min_duration_off_s: float = 0.1,
     batch_size: int = 128,
@@ -175,6 +176,8 @@ def main(
     recursive_search: bool = False,
     device: Literal["gpu", "cuda", "cpu", "mps"] = "gpu",
     keep_raw: bool = False,
+    *args,
+    **kwargs,
 ):
     """Run sliding inference on the given files and then merges the created segments.
 
@@ -196,6 +199,8 @@ def main(
         ValueError: _description_
         ValueError: _description_
     """
+    if high_precision:
+        thresholds = Path("thresholds/hp.toml")
     if thresholds:
         shutil.copy(str(thresholds), dst=output)
         logger.info(f"Using thresholds: {thresholds}")
@@ -255,7 +260,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config",
         type=str,
-        default="VTC-2.0/model/config.yml",
+        default="VTC-2/model/config.toml",
         help="Config file to be loaded and used for inference.",
     )
     parser.add_argument(
@@ -268,7 +273,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--checkpoint",
-        default="VTC-2.0/model/best.ckpt",
+        default="VTC-2/model/best.ckpt",
         help="Path to a pretrained model checkpoint.",
     )
     parser.add_argument(
@@ -284,7 +289,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--thresholds",
         type=Path,
+        default=Path("thresholds/f1.toml"),
         help="If thresholds dict is given, perform predictions using thresholding.",
+    )
+    parser.add_argument(
+        "--high_precision",
+        action="store_true",
+        help="Loads the high precision thresholds, overwrites the `--thresholds` argument.",
     )
     parser.add_argument(
         "--min_duration_on_s",
