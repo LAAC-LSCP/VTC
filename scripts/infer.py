@@ -166,7 +166,7 @@ def main(
     wavs: str = "data/debug/wav",
     checkpoint: str = "VTC-2/model/best.ckpt",
     save_logits: bool = False,
-    thresholds: None | Path = None,
+    thresholds: None | Path = Path("thresholds/f1.toml"),
     min_duration_on_s: float = 0.1,
     min_duration_off_s: float = 0.1,
     batch_size: int = 128,
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--config",
         type=str,
-        default="VTC-2.0/model/config.yml",
+        default="VTC-2/model/config.toml",
         help="Config file to be loaded and used for inference.",
     )
     parser.add_argument(
@@ -268,7 +268,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--checkpoint",
-        default="VTC-2.0/model/best.ckpt",
+        default="VTC-2/model/best.ckpt",
         help="Path to a pretrained model checkpoint.",
     )
     parser.add_argument(
@@ -284,6 +284,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--thresholds",
         type=Path,
+        default=Path("thresholds/f1.toml"),
         help="If thresholds dict is given, perform predictions using thresholding.",
     )
     parser.add_argument(

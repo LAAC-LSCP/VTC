@@ -1,0 +1,15 @@
+[KCHI]
+lower_bound = 0.437
+upper_bound = 1.0
+
+[OCH]
+lower_bound = 0.378
+upper_bound = 1.0
+
+[MAL]
+lower_bound = 0.429
+upper_bound = 1.0
+
+[FEM]
+lower_bound = 0.377
+upper_bound = 1.0
