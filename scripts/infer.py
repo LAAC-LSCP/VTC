@@ -166,6 +166,7 @@ def main(
     wavs: str = "data/debug/wav",
     checkpoint: str = "VTC-2/model/best.ckpt",
     save_logits: bool = False,
+    high_precision: bool = False,
     thresholds: None | Path = Path("thresholds/f1.toml"),
     min_duration_on_s: float = 0.1,
     min_duration_off_s: float = 0.1,
@@ -175,6 +176,8 @@ def main(
     recursive_search: bool = False,
     device: Literal["gpu", "cuda", "cpu", "mps"] = "gpu",
     keep_raw: bool = False,
+    *args,
+    **kwargs,
 ):
     """Run sliding inference on the given files and then merges the created segments.
 
@@ -196,6 +199,8 @@ def main(
         ValueError: _description_
         ValueError: _description_
     """
+    if high_precision:
+        thresholds = Path("thresholds/hp.toml")
     if thresholds:
         shutil.copy(str(thresholds), dst=output)
         logger.info(f"Using thresholds: {thresholds}")
@@ -286,6 +291,11 @@ if __name__ == "__main__":
         type=Path,
         default=Path("thresholds/f1.toml"),
         help="If thresholds dict is given, perform predictions using thresholding.",
+    )
+    parser.add_argument(
+        "--high_precision",
+        action="store_true",
+        help="Loads the high precision thresholds, overwrites the `--thresholds` argument.",
     )
     parser.add_argument(
         "--min_duration_on_s",
