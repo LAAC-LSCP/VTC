@@ -42,7 +42,6 @@ features = [
 favicon = "assets/baby.png"
 [project.theme.icon]
 logo = "lucide/baby"
-# logo = "assets/favicon_256.png"
 
 [project.theme.palette]
 # scheme = "slate"
