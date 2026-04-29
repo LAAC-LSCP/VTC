@@ -1,0 +1,63 @@
+[project]
+site_name = "VTC — Voice Type Classifier"
+site_url = "https://LAAC-LSCP.github.io/VTC"
+site_description = "A deep learning model for classifying speakers in child-centered long-form audio recordings."
+site_author = "LAAC-LSCP"
+copyright = "&copy; 2026 LAAC-LSCP, ENS-PSL"
+
+nav = [
+    { "VTC 2" = [
+        { "Home" = "index.md" },
+        { "Getting Started" = "getting-started.md" },
+        { "User Guide" = "guide.md" },
+        { "Advanced" = [
+            { "HPC" = "advanced/hpc.md" },
+            "advanced/finetuning.md",
+            "advanced/thresholds.md",
+            {"Raw model output" = "advanced/raw_outputs.md"},
+        ] },
+        { "Miscellaneous" = [
+            { "Version History" = "misc/versions.md" },
+            { "Troubleshooting" = "misc/troubleshooting.md" },
+        ] },
+    ] },
+
+    # { "BabyHuBERT" = [
+    #     "babyhubert/index.md"
+    # ]}
+]
+
+[project.theme]
+features = [
+    "navigation.tabs",
+    "navigation.sections",
+    "navigation.instant",
+    "navigation.path",
+    "navigation.top",
+    "navigation.footer",
+    # "navigation.instant.preview", # experimental :/
+    "toc.follow",
+    "content.code.copy",
+]
+favicon = "assets/baby.png"
+[project.theme.icon]
+logo = "lucide/baby"
+
+[project.theme.palette]
+# scheme = "slate"
+primary = "green"
+accent = "green"
+
+[project.extra]
+repo_url = "https://github.com/LAAC-LSCP/VTC"
+repo_name = "LAAC-LSCP/VTC"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/LAAC-LSCP/VTC"
+name = "VTC GitHub repository"
+
+# [[project.extra.social]]
+# icon = "fontawesome/brands/python"
+# link = "https://pypi.org/project/"
+# name = "VTC PyPI page"
