@@ -50,7 +50,15 @@ def load_rttm(path: Path | str) -> pl.DataFrame:
             separator=" ",
         )
     except pl.exceptions.NoDataError:
-        data = pl.DataFrame(None, ("uid", "start_time_s", "duration_s", "label"))
+        data = pl.DataFrame(
+            None,
+            {
+                "uid": pl.String(),
+                "start_time_s": pl.Float64(),
+                "duration_s": pl.Float64(),
+                "label": pl.String(),
+            },
+        )
 
     return data
 
