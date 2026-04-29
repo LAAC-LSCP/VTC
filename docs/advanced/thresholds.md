@@ -24,7 +24,7 @@ uv run scripts/infer.py      \
 You can use the following interactive visualizer by dragging each slider, or clicking directly on a chart, to set the decision threshold per class.
 The macro-F1 at the top updates live as you tune.
 
-<iframe src="../../assets/visualisations/threshold_plot.html?data=tuning_results.json"
+<iframe src="../assets/visualisations/threshold_plot.html?data=tuning_results.json"
         width="100%" height="700" style="border:0;"></iframe>
 
 <!-- For manual threholds selection, you can refer to the following figure, create your own threshold file and use it 
