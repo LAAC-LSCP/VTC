@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Threshold tuning</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+  :root {
+    --fg: #1a1a1a;
+    --muted: #6b7280;
+    --bg: transparent;
+    --panel: #f6f7f9;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fg: #f1f5f9;
+      --muted: #9ca3af;
+      --panel: rgba(255,255,255,0.04);
+      --border: #2a2f3a;
+      --accent: #60a5fa;
+    }
+  }
+
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    margin: 0;
+    padding: 0.5rem;
+    line-height: 1.4;
+    font-size: 13px;
+  }
+
+  .macro {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.5rem;
+    /* background: var(--panel); */
+    /* border: 1px solid var(--border); */
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .macro .label {
+    font-size: 1.25rem;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .macro .value {
+    font-variant-numeric: tabular-nums;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 1.25rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .legend .item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .legend .item:hover {
+    background: var(--panel);
+  }
+  .legend .item.hidden {
+    opacity: 0.4;
+    text-decoration: line-through;
+  }
+  .legend .swatch {
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  .presets {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+  .presets button {
+    font: inherit;
+    font-size: 0.78rem;
+    color: var(--fg);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .presets button:hover {
+    border-color: var(--accent);
+  }
+  .presets button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    font-weight: 600;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  /* Fall back to 1 column on truly narrow viewports (mobile) */
+  @media (max-width: 480px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.6rem 0.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0; /* allow children to shrink below intrinsic width */
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .panel-header .title {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .stats {
+    display: flex;
+    gap: 0.6rem;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.75rem;
+  }
+  .stats .stat .k { color: var(--muted); }
+  .stats .stat .v { font-weight: 600; margin-left: 0.2rem; }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .slider-row label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    /* text-transform: uppercase; */
+    letter-spacing: 0.04em;
+  }
+  .slider-row input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--accent);
+  }
+  .slider-row .thresh {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 0.78rem;
+    min-width: 3rem;
+    text-align: right;
+  }
+
+  .chart { width: 100%; height: 200px; }
+
+  .error {
+    color: #b91c1c;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="presets">
+  <button type="button" data-preset="max_f1">Max F1</button>
+  <button type="button" data-preset="high_precision">High precision</button>
+</div>
+
+<div class="macro">
+  <span class="label">Macro F1: </span>
+  <span class="value" id="macro-f1">-</span>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="grid" id="grid"></div>
+
+<div id="error" class="error" hidden></div>
+
+<script>
+(async function () {
+  const params = new URLSearchParams(window.location.search);
+  const dataUrl = params.get("data") || "tuning_results.json";
+
+  const errEl = document.getElementById("error");
+  let raw;
+  try {
+    const resp = await fetch(dataUrl);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${dataUrl}`);
+    raw = await resp.json();
+  } catch (e) {
+    errEl.hidden = false;
+    errEl.textContent = `Could not load data: ${e.message}`;
+    return;
+  }
+
+  const byLabel = {};
+  for (const [label, threshMap] of Object.entries(raw)) {
+    byLabel[label] = Object.entries(threshMap)
+      .map(([t, m]) => ({
+        t: Number(t),
+        f1: Number(m.f1),
+        precision: Number(m.precision),
+        recall: Number(m.recall),
+      }))
+      .sort((a, b) => a.t - b.t);
+  }
+  const labels = Object.keys(byLabel);
+  if (labels.length === 0) {
+    errEl.hidden = false;
+    errEl.textContent = "No labels found in data.";
+    return;
+  }
+
+  // Format a 0-1 metric as a 0-100 percentage with 2 decimals
+  const fmt = (x) => (x == null || Number.isNaN(x) ? "-" : (x * 100).toFixed(2));
+  const cssVar = (name, fallback) =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+  const fgColor = cssVar("--fg", "#222");
+  const mutedColor = cssVar("--muted", "#666");
+  const colorMap = { f1: "#e15759", precision: "#4e79a7", recall: "#59a14f" };
+
+  // ─────────────────────────────────────────────────────────────
+  // Hardcoded preset: high-precision thresholds, one per class.
+  // Edit these values to match your model. Any class missing from
+  // the map will fall back to its argmax-F1 threshold.
+  // ─────────────────────────────────────────────────────────────
+  const HIGH_PRECISION_THRESHOLDS = {
+    KCHI:  0.8,
+    OCH:  0.52,
+    MAL: 0.75,
+    FEM: 0.80,
+  };
+
+  // Populate the global legend
+  const legendEl = document.getElementById("legend");
+  const visibility = { f1: true, precision: true, recall: true };
+  const legendItems = {};
+
+  for (const [name, color] of Object.entries(colorMap)) {
+    const item = document.createElement("span");
+    item.className = "item";
+    item.dataset.metric = name;
+    item.innerHTML = `<span class="swatch" style="background:${color}"></span>${name}`;
+    item.addEventListener("click", () => toggleMetric(name));
+    legendEl.appendChild(item);
+    legendItems[name] = item;
+  }
+
+  function toggleMetric(name) {
+    visibility[name] = !visibility[name];
+    legendItems[name].classList.toggle("hidden", !visibility[name]);
+    panels.forEach(p => {
+      p.chart.dispatchAction({
+        type: visibility[name] ? "legendSelect" : "legendUnSelect",
+        name,
+      });
+    });
+  }
+
+  function argmaxF1(rows) {
+    let best = 0;
+    for (let i = 1; i < rows.length; i++) if (rows[i].f1 > rows[best].f1) best = i;
+    return best;
+  }
+
+  // Find the index in `rows` whose threshold `t` is closest to the target
+  function nearestIdx(rows, target) {
+    let best = 0;
+    let bestDist = Math.abs(rows[0].t - target);
+    for (let i = 1; i < rows.length; i++) {
+      const d = Math.abs(rows[i].t - target);
+      if (d < bestDist) { best = i; bestDist = d; }
+    }
+    return best;
+  }
+
+  // Resolve the index each panel should use for a given preset name
+  function presetIndex(label, rows, preset) {
+    if (preset === "high_precision") {
+      const target = HIGH_PRECISION_THRESHOLDS[label];
+      if (target != null) return nearestIdx(rows, target);
+    }
+    // default / max_f1
+    return argmaxF1(rows);
+  }
+
+  const macroEl = document.getElementById("macro-f1");
+  const grid = document.getElementById("grid");
+  const panels = [];
+
+  function buildOption(rows, markX, className) {
+    const series = ["f1", "precision", "recall"].map(k => ({
+      name: k,
+      type: "line",
+      smooth: true,
+      symbol: "none",
+      lineStyle: { width: 1.5 },
+      itemStyle: { color: colorMap[k] },
+      data: rows.map(r => [r.t, r[k] * 100]),
+      ...(k === "f1" ? {
+        markLine: {
+          symbol: "none",
+          silent: true,
+          lineStyle: { color: mutedColor, type: "dashed", width: 1 },
+          label: { show: false },
+          data: [{ xAxis: markX }],
+        },
+      } : {}),
+    }));
+
+    return {
+      grid: { left: 44, right: 8, top: 8, bottom: 30 },
+      tooltip: {
+        trigger: "axis",
+        textStyle: { fontSize: 11 },
+        formatter: (params) => {
+          const t = Number(params[0].axisValue).toFixed(3);
+          const header = `Threshold: ${t}`;
+          const lines = params.map(
+            (p) => `${p.marker} ${p.seriesName}: ${p.value[1].toFixed(2)} %`
+          );
+          return [header, ...lines].join("<br>");
+        },
+      },
+      legend: { show: false, data: ["f1", "precision", "recall"] },
+      xAxis: {
+        type: "value",
+        min: 0,
+        max: 1,
+        name: "Threshold",
+        nameLocation: "middle",
+        nameGap: 21,
+        nameTextStyle: { color: fgColor, fontSize: 11, fontWeight: 600 },
+        axisLabel: {
+          color: mutedColor,
+          fontSize: 9,
+          formatter: (v) => v.toFixed(1),
+        },
+        axisLine: { lineStyle: { color: mutedColor } },
+        splitNumber: 10,
+      },
+      yAxis: {
+        type: "value",
+        min: 0,
+        max: 100,
+        name: `Metric value (%)`,
+        nameLocation: "middle",
+        nameGap: 30,
+        nameTextStyle: { color: fgColor, fontSize: 11, fontWeight: 600 },
+        axisLabel: { color: mutedColor, fontSize: 9 },
+        splitLine: { lineStyle: { color: "rgba(127,127,127,0.18)" } },
+      },
+      series,
+    };
+  }
+
+  function updateMacro() {
+    const sum = panels.reduce((acc, p) => acc + p.rows[p.idx].f1, 0);
+    macroEl.textContent = fmt(sum / panels.length) + "%";
+  }
+
+  let activePreset = "max_f1";
+
+  function createPanel(label) {
+    const rows = byLabel[label];
+    const idx = presetIndex(label, rows, activePreset);
+
+    const panel = document.createElement("div");
+    panel.className = "panel";
+    panel.innerHTML = `
+      <div class="panel-header">
+        <span class="title">${label}</span>
+        <div class="stats">
+          <div class="stat"><span class="k">F1</span><span class="v" data-k="f1">-</span>%</div>
+          <div class="stat"><span class="k">P</span><span class="v" data-k="precision">-</span>%</div>
+          <div class="stat"><span class="k">R</span><span class="v" data-k="recall">-</span>%</div>
+        </div>
+      </div>
+      <div class="slider-row">
+        <label>Threshold</label>
+        <input type="range" min="0" max="${rows.length - 1}" step="1" value="${idx}">
+        <span class="thresh">-</span>
+      </div>
+      <div class="chart"></div>
+    `;
+    grid.appendChild(panel);
+
+    const chartEl = panel.querySelector(".chart");
+    const slider = panel.querySelector('input[type="range"]');
+    const threshEl = panel.querySelector(".thresh");
+    const statEls = {
+      f1: panel.querySelector('[data-k="f1"]'),
+      precision: panel.querySelector('[data-k="precision"]'),
+      recall: panel.querySelector('[data-k="recall"]'),
+    };
+
+    const chart = echarts.init(chartEl, null, { renderer: "svg" });
+    chart.setOption(buildOption(rows, rows[idx].t, label), true);
+
+    const state = { label, rows, idx, chart, slider, threshEl, statEls };
+    panels.push(state);
+
+    function refresh() {
+      const row = state.rows[state.idx];
+      state.threshEl.textContent = row.t.toFixed(3);
+      statEls.f1.textContent = fmt(row.f1);
+      statEls.precision.textContent = fmt(row.precision);
+      statEls.recall.textContent = fmt(row.recall);
+      chart.setOption({
+        series: [{ name: "f1", markLine: { data: [{ xAxis: row.t }] } }],
+      });
+      updateMacro();
+    }
+    state.refresh = refresh;
+
+    slider.addEventListener("input", () => {
+      state.idx = Number(slider.value);
+      refresh();
+    });
+
+    chart.getZr().on("click", (e) => {
+      const point = [e.offsetX, e.offsetY];
+      if (!chart.containPixel("grid", point)) return;
+      const xVal = chart.convertFromPixel({ xAxisIndex: 0 }, e.offsetX);
+      state.idx = nearestIdx(state.rows, xVal);
+      slider.value = state.idx;
+      refresh();
+    });
+
+    refresh();
+  }
+
+  labels.forEach(createPanel);
+  window.addEventListener("resize", () => panels.forEach(p => p.chart.resize()));
+
+  // Preset button wiring
+  const presetButtons = document.querySelectorAll(".presets button");
+  function applyPreset(preset) {
+    activePreset = preset;
+    presetButtons.forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.preset === preset);
+    });
+    panels.forEach(p => {
+      p.idx = presetIndex(p.label, p.rows, preset);
+      p.slider.value = p.idx;
+      p.refresh();
+    });
+  }
+  presetButtons.forEach(btn => {
+    btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+  });
+
+  // Activate Max F1 by default
+  applyPreset("max_f1");
+})();
+</script>
+
+</body>
+</html>

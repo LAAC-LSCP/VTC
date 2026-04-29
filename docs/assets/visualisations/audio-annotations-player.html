@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Audio + annotations player</title>
+<style>
+  :root {
+    --fg: #1f2430;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --panel: #f7f7f8;
+    --wave: #8b92a3;
+    --cursor: #e11d48;
+    --accent: #2563eb;
+    --c-FEM:  #d97757;
+    --c-MAL:  #2e2f45;
+    --c-KCHI: #e3c171;
+    --c-OCH:  #6fa89a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--fg); background: #fff;
+  }
+  .app { max-width: 960px; margin: 0 auto; }
+
+  .head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 4px 10px;
+  }
+  .head .title { font-weight: 600; font-size: 14px; }
+  .head .sub { font-size: 12px; color: var(--muted); }
+
+  .stage {
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+    background: white; position: relative;
+  }
+  canvas { display: block; width: 100%; }
+
+  .transport {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 4px 4px;
+    font-size: 13px;
+  }
+  .play-btn {
+    appearance: none; border: none; background: var(--fg); color: white;
+    width: 40px; height: 40px; border-radius: 999px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .play-btn:hover { background: #000; }
+  .time { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .time .cur { color: var(--fg); }
+  .transport .spacer { flex: 1; }
+  .kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted);
+    border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; padding: 1px 5px; background: #fafbfc;
+  }
+
+  .tip {
+    position: absolute; pointer-events: none;
+    background: var(--fg); color: white;
+    font-size: 11px; padding: 4px 8px; border-radius: 6px;
+    white-space: nowrap; opacity: 0; transition: opacity 120ms;
+    transform: translate(-50%, -120%);
+    font-variant-numeric: tabular-nums;
+  }
+  .tip.show { opacity: 1; }
+
+  details.advanced {
+    margin-top: 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); overflow: hidden;
+  }
+  details.advanced > summary {
+    list-style: none; cursor: pointer;
+    padding: 8px 12px; font-size: 13px; color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  details.advanced > summary::-webkit-details-marker { display: none; }
+  details.advanced > summary:hover { color: var(--fg); }
+  details.advanced[open] > summary { border-bottom: 1px solid var(--line); }
+  details.advanced .chev { transition: transform 150ms; }
+  details.advanced[open] .chev { transform: rotate(90deg); }
+  .adv-body { padding: 12px; display: grid; gap: 10px; }
+  .adv-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .adv-row input[type="file"] { font-size: 12px; }
+  .btn {
+    appearance: none; border: 1px solid var(--line); background: white;
+    padding: 5px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+    color: var(--fg);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  #csvText {
+    width: 100%; min-height: 120px; resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px; line-height: 1.5; color: var(--fg); background: white;
+    border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+  }
+  #csvText:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .err { color: #b91c1c; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="head">
+    <div>
+      <div class="title" id="title">—</div>
+      <div class="sub" id="sub">demo recording</div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="canvas" height="300"></canvas>
+    <div class="tip" id="tip"></div>
+  </div>
+
+  <div class="transport">
+    <button class="play-btn" id="playBtn" aria-label="Play">
+      <svg id="playIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="time"><span class="cur" id="tCur">0:00.00</span> / <span id="tTot">0:00.00</span></div>
+    <div class="spacer"></div>
+    <span style="font-size:12px;color:var(--muted)">
+      <span class="kbd">Space</span> play &nbsp; <span class="kbd">←</span> <span class="kbd">→</span> seek
+    </span>
+  </div>
+
+  <details class="advanced">
+    <summary>
+      <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      Use your own data
+    </summary>
+    <div class="adv-body">
+      <div class="adv-row">
+        <label>Audio file <input type="file" id="audioFile" accept="audio/*"></label>
+        <span id="status"></span>
+      </div>
+      <div>
+        <div class="adv-row" style="justify-content:space-between;margin-bottom:6px">
+          <span>Annotations CSV — columns: <code>uid, start_time_s, duration_s, label</code></span>
+          <span>
+            <button class="btn" id="applyCsv">Apply</button>
+            <button class="btn" id="clearCsv">Clear</button>
+          </span>
+        </div>
+        <textarea id="csvText" spellcheck="false"></textarea>
+        <div class="err" id="err"></div>
+      </div>
+    </div>
+  </details>
+
+</div>
+
+<script>
+(function () {
+  const PALETTE = { FEM:css('--c-FEM'), MAL:css('--c-MAL'), KCHI:css('--c-KCHI'), OCH:css('--c-OCH') };
+  function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  const $ = (id) => document.getElementById(id);
+
+  const canvas = $('canvas'), ctx = canvas.getContext('2d');
+  const audio = new Audio(); audio.preload = 'auto';
+
+  let peaks = null, duration = 0, title = '';
+  let annotations = [], labels = [];
+  let annRects = [], hoverIdx = -1, activeIdx = -1;
+  let stopAt = null;
+  let raf = null;
+
+  // ---------- CSV ----------
+  function parseCSV(text) {
+    const rows = text.replace(/\r/g,'').split('\n').filter(l => l.trim().length);
+    if (!rows.length) return [];
+    const h = rows[0].split(',').map(s=>s.trim().toLowerCase());
+    const iU=h.indexOf('uid'), iS=h.indexOf('start_time_s'), iD=h.indexOf('duration_s'), iL=h.indexOf('label');
+    if (iS<0||iD<0||iL<0) throw new Error('CSV must have columns: uid, start_time_s, duration_s, label');
+    const out = [];
+    for (let i=1;i<rows.length;i++) {
+      const c = rows[i].split(',').map(s=>s.trim());
+      if (!c[iL]) continue;
+      out.push({ uid: iU>=0?c[iU]:'', start:parseFloat(c[iS]), dur:parseFloat(c[iD]), label:c[iL] });
+    }
+    return out;
+  }
+  function applyCsv() {
+    $('err').textContent = '';
+    try {
+      const t = $('csvText').value;
+      annotations = t.trim() ? parseCSV(t) : [];
+      labels = uniqueLabels(annotations);
+      draw();
+    } catch (err) { $('err').textContent = err.message; }
+  }
+
+  // ---------- audio loading ----------
+  async function loadAudioFromBlob(blob, displayName) {
+    const url = URL.createObjectURL(blob);
+    audio.src = url;
+    await new Promise((res, rej) => {
+      audio.onloadedmetadata = res;
+      audio.onerror = () => rej(new Error('Could not load audio'));
+    });
+    duration = audio.duration;
+    const buf = await blob.arrayBuffer();
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const actx = new AC();
+    const decoded = await actx.decodeAudioData(buf.slice(0));
+    peaks = computePeaks(decoded, 2000);
+    actx.close();
+    title = displayName.replace(/\.[^.]+$/,'');
+    $('title').textContent = title;
+    $('tTot').textContent = fmtTime(duration);
+    draw();
+  }
+  function computePeaks(audioBuffer, nBuckets) {
+    const ch = audioBuffer.numberOfChannels, len = audioBuffer.length;
+    const step = Math.max(1, Math.floor(len / nBuckets));
+    const out = new Float32Array(nBuckets * 2);
+    const data = [];
+    for (let c=0;c<ch;c++) data.push(audioBuffer.getChannelData(c));
+    for (let b=0;b<nBuckets;b++) {
+      const s=b*step, e=Math.min(len,s+step);
+      let mn=1, mx=-1;
+      for (let i=s;i<e;i++) {
+        let v=0; for (let c=0;c<ch;c++) v += data[c][i]; v/=ch;
+        if (v<mn) mn=v; if (v>mx) mx=v;
+      }
+      out[b*2]=mn; out[b*2+1]=mx;
+    }
+    return out;
+  }
+
+  // ---------- synthesize demo audio ----------
+  function synthDemo(anns, totalDur, sr = 22050) {
+    const n = Math.ceil(totalDur * sr);
+    const data = new Float32Array(n);
+    for (let i=0;i<n;i++) data[i] = (Math.random()-0.5) * 0.02;
+    const freqs = { FEM: 320, MAL: 140, KCHI: 580, OCH: 450 };
+    anns.forEach(a => {
+      const s = Math.floor(a.start * sr);
+      const e = Math.min(n, Math.floor((a.start + a.dur) * sr));
+      const f = freqs[a.label] || 300;
+      const ramp = Math.floor(0.04 * sr);
+      for (let i=s;i<e;i++) {
+        const t = (i - s) / sr;
+        let env = 1;
+        if (i - s < ramp) env = (i - s) / ramp;
+        else if (e - i < ramp) env = (e - i) / ramp;
+        const vib = 1 + 0.015 * Math.sin(2*Math.PI*5*t);
+        const y = Math.sin(2*Math.PI*f*vib*t) + 0.35*Math.sin(2*Math.PI*f*2*t);
+        data[i] += y * env * 0.28;
+      }
+    });
+    return encodeWav(data, sr);
+  }
+  function encodeWav(samples, sr) {
+    const buf = new ArrayBuffer(44 + samples.length*2);
+    const v = new DataView(buf);
+    const ws = (o,s) => { for (let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+    ws(0,'RIFF'); v.setUint32(4, 36+samples.length*2, true); ws(8,'WAVE');
+    ws(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+    v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+    ws(36,'data'); v.setUint32(40, samples.length*2, true);
+    let o=44;
+    for (let i=0;i<samples.length;i++) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      v.setInt16(o, s*0x7FFF, true); o+=2;
+    }
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  // ---------- drawing ----------
+  function layout() {
+    const r = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = 300;
+    canvas.width = Math.floor(w*r); canvas.height = Math.floor(h*r);
+    ctx.setTransform(r,0,0,r,0,0);
+    return { w, h };
+  }
+  const PAD_L=56, PAD_R=12, PAD_T=8, PAD_B=28, WAVE_FRAC=0.55;
+
+  function draw() {
+    const { w, h } = layout();
+    ctx.clearRect(0,0,w,h);
+
+    const innerW = w-PAD_L-PAD_R, innerH = h-PAD_T-PAD_B;
+    const waveH = innerH*WAVE_FRAC, labH = innerH-waveH;
+    labels = uniqueLabels(annotations);
+    const rowH = labels.length ? labH/labels.length : 0;
+
+    const waveTop = PAD_T, waveMid = waveTop + waveH/2;
+
+    ctx.strokeStyle = '#eef0f3';
+    ctx.font = '11px ui-sans-serif, system-ui, sans-serif';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    [-1,-0.5,0,0.5,1].forEach(v => {
+      const y = waveMid - v*(waveH/2)*0.9;
+      ctx.beginPath(); ctx.moveTo(PAD_L,y); ctx.lineTo(w-PAD_R,y); ctx.stroke();
+      ctx.fillStyle = '#6b7280'; ctx.fillText(v.toFixed(1), PAD_L-6, y);
+    });
+    ctx.save(); ctx.translate(14, waveMid); ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center'; ctx.fillStyle='#4b5563'; ctx.fillText('Amplitude',0,0);
+    ctx.restore();
+
+    if (peaks) {
+      ctx.fillStyle = css('--wave');
+      const n = peaks.length/2;
+      for (let i=0;i<innerW;i++) {
+        const b = Math.floor(i/innerW * n);
+        const mn = peaks[b*2], mx = peaks[b*2+1];
+        const y1 = waveMid - mx*(waveH/2)*0.9;
+        const y2 = waveMid - mn*(waveH/2)*0.9;
+        ctx.fillRect(PAD_L+i, y1, 1, Math.max(1, y2-y1));
+      }
+    } else {
+      ctx.fillStyle = '#9ca3af'; ctx.textAlign='center';
+      ctx.fillText('Loading waveform…', PAD_L + innerW/2, waveMid);
+    }
+
+    ctx.strokeStyle='#111827'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(PAD_L, waveTop+waveH); ctx.lineTo(w-PAD_R, waveTop+waveH); ctx.stroke();
+
+    const dur = duration || maxAnnTime() || 1;
+    const labTop = waveTop + waveH;
+
+    labels.forEach((lab, i) => {
+      const y = labTop + i*rowH;
+      ctx.strokeStyle='#eef0f3';
+      ctx.beginPath(); ctx.moveTo(PAD_L, y+rowH); ctx.lineTo(w-PAD_R, y+rowH); ctx.stroke();
+      ctx.fillStyle='#1f2937';
+      ctx.font='bold 12px ui-sans-serif, system-ui, sans-serif';
+      ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillText(lab, PAD_L-8, y+rowH/2);
+    });
+
+    annRects = [];
+    annotations.forEach((a, idx) => {
+      const row = labels.indexOf(a.label); if (row<0) return;
+      const x1 = PAD_L + (a.start/dur)*innerW;
+      const x2 = PAD_L + ((a.start+a.dur)/dur)*innerW;
+      const y  = labTop + row*rowH + rowH*0.22;
+      const hh = rowH*0.56;
+      const bw = Math.max(2, x2-x1);
+      const color = PALETTE[a.label] || '#9ca3af';
+      const isHover = idx === hoverIdx;
+      const isActive = idx === activeIdx;
+
+      const r = Math.min(3, hh/2, bw/2);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = isActive ? 1 : (isHover ? 1 : 0.88);
+      roundRect(x1, y, bw, hh, r); ctx.fill();
+      ctx.globalAlpha = 1;
+
+      if (isHover) {
+        ctx.fillStyle = 'rgba(255,255,255,0.22)';
+        roundRect(x1, y, bw, hh, r); ctx.fill();
+      }
+      if (isActive) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        roundRect(x1-1, y-1, bw+2, hh+2, r+1); ctx.stroke();
+      }
+
+      annRects.push({ x:x1, y, w:bw, h:hh, idx });
+    });
+
+    const nTicks = 10;
+    ctx.strokeStyle='#d1d5db'; ctx.fillStyle='#4b5563';
+    ctx.font='11px ui-sans-serif, system-ui, sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    for (let i=0;i<=nTicks;i++) {
+      const t = (i/nTicks)*dur;
+      const x = PAD_L + (t/dur)*innerW;
+      ctx.beginPath(); ctx.moveTo(x, h-PAD_B); ctx.lineTo(x, h-PAD_B+4); ctx.stroke();
+      ctx.fillText(t>=10 ? t.toFixed(0) : t.toFixed(1), x, h-PAD_B+6);
+    }
+    ctx.fillText('Time (s)', PAD_L+innerW/2, h-10);
+
+    if (duration) {
+      const x = PAD_L + (audio.currentTime/duration)*innerW;
+      ctx.strokeStyle = css('--cursor'); ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, h-PAD_B); ctx.stroke();
+      ctx.fillStyle = css('--cursor');
+      ctx.beginPath(); ctx.moveTo(x-4, PAD_T); ctx.lineTo(x+4, PAD_T); ctx.lineTo(x, PAD_T+5); ctx.closePath(); ctx.fill();
+    }
+  }
+
+  function roundRect(x,y,w,h,r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function uniqueLabels(anns) {
+    const known = ['KCHI','OCH','FEM','MAL'];
+    const present = new Set(anns.map(a=>a.label));
+    const ordered = known.filter(l => present.has(l));
+    anns.forEach(a => { if (!ordered.includes(a.label)) ordered.push(a.label); });
+    return ordered;
+  }
+  function maxAnnTime() {
+    let m=0; annotations.forEach(a=>{ m=Math.max(m,a.start+a.dur); }); return m;
+  }
+  function fmtTime(t) {
+    if (!isFinite(t)) return '0:00.00';
+    const m = Math.floor(t/60), s = t - m*60;
+    return `${m}:${s.toFixed(2).padStart(5,'0')}`;
+  }
+
+  // ---------- playback ----------
+  function playSegment(idx) {
+    if (!duration) return;
+    const a = annotations[idx]; if (!a) return;
+    activeIdx = idx;
+    audio.currentTime = Math.max(0, Math.min(duration-0.001, a.start));
+    stopAt = Math.min(duration, a.start + a.dur);
+    audio.play();
+    setPlayIcon(true);
+    tick();
+  }
+  function setPlayIcon(playing) {
+    $('playIcon').innerHTML = playing
+      ? '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>'
+      : '<path d="M8 5v14l11-7z"/>';
+    $('playBtn').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  }
+
+  $('playBtn').addEventListener('click', () => {
+    if (audio.paused) {
+      if (audio.currentTime >= duration - 0.01) audio.currentTime = 0;
+      stopAt = null; activeIdx = -1;
+      audio.play(); setPlayIcon(true); tick();
+    } else {
+      audio.pause(); setPlayIcon(false);
+    }
+  });
+
+  audio.addEventListener('ended', () => { stopAt = null; activeIdx = -1; setPlayIcon(false); draw(); });
+
+  function tick() {
+    $('tCur').textContent = fmtTime(audio.currentTime);
+    if (stopAt === null) {
+      const t = audio.currentTime;
+      let found = -1;
+      for (let i=0;i<annotations.length;i++) {
+        const a = annotations[i];
+        if (t >= a.start && t < a.start + a.dur) { found = i; break; }
+      }
+      activeIdx = found;
+    }
+    if (stopAt !== null && audio.currentTime >= stopAt) {
+      audio.pause();
+      stopAt = null;
+      setPlayIcon(false);
+    }
+    draw();
+    if (!audio.paused && !audio.ended) raf = requestAnimationFrame(tick);
+  }
+
+  // ---------- canvas interaction ----------
+  function hitTest(px, py) {
+    for (let i=0;i<annRects.length;i++) {
+      const r = annRects[i];
+      if (px>=r.x && px<=r.x+r.w && py>=r.y && py<=r.y+r.h) return r.idx;
+    }
+    return -1;
+  }
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX-rect.left, py = e.clientY-rect.top;
+    const idx = hitTest(px, py);
+    if (idx !== hoverIdx) {
+      hoverIdx = idx;
+      canvas.style.cursor = idx>=0 ? 'pointer' : 'default';
+      draw();
+    }
+    const tip = $('tip');
+    if (idx >= 0) {
+      const a = annotations[idx];
+      tip.textContent = `${a.label} · ${a.start.toFixed(2)}–${(a.start+a.dur).toFixed(2)}s (${a.dur.toFixed(2)}s)`;
+      const stage = $('stage').getBoundingClientRect();
+      tip.style.left = (e.clientX - stage.left) + 'px';
+      tip.style.top = (e.clientY - stage.top) + 'px';
+      tip.classList.add('show');
+    } else {
+      tip.classList.remove('show');
+    }
+  });
+  canvas.addEventListener('mouseleave', () => {
+    if (hoverIdx !== -1) { hoverIdx = -1; canvas.style.cursor='default'; draw(); }
+    $('tip').classList.remove('show');
+  });
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX-rect.left, py = e.clientY-rect.top;
+    const idx = hitTest(px, py);
+    if (idx >= 0) { playSegment(idx); return; }
+    if (!duration) return;
+    const innerW = rect.width-PAD_L-PAD_R;
+    if (px<PAD_L || px>rect.width-PAD_R) return;
+    const t = (px-PAD_L)/innerW * duration;
+    audio.currentTime = Math.max(0, Math.min(duration-0.001, t));
+    stopAt = null; activeIdx = -1; draw();
+  });
+
+  // ---------- keyboard ----------
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space') { e.preventDefault(); $('playBtn').click(); }
+    else if (e.code === 'ArrowLeft')  { audio.currentTime = Math.max(0, audio.currentTime - (e.shiftKey ? 5 : 1)); draw(); }
+    else if (e.code === 'ArrowRight') { audio.currentTime = Math.min(duration, audio.currentTime + (e.shiftKey ? 5 : 1)); draw(); }
+    else if (e.code === 'Home')       { audio.currentTime = 0; draw(); }
+  });
+
+  // ---------- advanced panel ----------
+  $('audioFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    $('status').textContent = 'decoding…';
+    try { await loadAudioFromBlob(f, f.name); $('status').textContent = 'ready'; }
+    catch (err) { $('status').textContent = 'error'; console.error(err); }
+  });
+  $('applyCsv').addEventListener('click', applyCsv);
+  $('clearCsv').addEventListener('click', () => {
+    $('csvText').value = ''; annotations = []; labels = []; activeIdx = -1;
+    draw();
+  });
+  $('csvText').addEventListener('blur', applyCsv);
+
+  window.addEventListener('resize', draw);
+
+  // ---------- init ----------
+  const demoCsv =
+`uid, start_time_s, duration_s, label
+recording_jd7aks, 0.12, 1.20, FEM
+recording_jd7aks, 3.30, 0.34, MAL
+recording_jd7aks, 3.98, 1.98, FEM
+recording_jd7aks, 5.86, 2.10, MAL
+recording_jd7aks, 6.10, 1.90, KCHI
+recording_jd7aks, 8.24, 0.52, OCH`;
+  $('csvText').value = demoCsv;
+  annotations = parseCSV(demoCsv);
+  duration = 9;
+  title = 'recording_jd7aks';
+  $('title').textContent = title;
+  $('sub').textContent = 'synthesized demo — expand "Use your own data" below to load yours';
+  $('tTot').textContent = fmtTime(duration);
+  labels = uniqueLabels(annotations);
+  draw();
+
+  (async () => {
+    try {
+      const blob = synthDemo(annotations, duration);
+      await loadAudioFromBlob(blob, 'recording_jd7aks.wav');
+    } catch (err) { console.error(err); }
+  })();
+})();
+</script>
+</body>
+</html>
