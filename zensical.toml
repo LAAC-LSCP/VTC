@@ -6,30 +6,23 @@ site_author = "LAAC-LSCP"
 copyright = "&copy; 2026 LAAC-LSCP, ENS-PSL"
 
 nav = [
-    { "VTC 2" = [
-        { "Home" = "index.md" },
-        { "Getting Started" = "getting-started.md" },
-        { "User Guide" = "guide.md" },
-        { "Advanced" = [
-            { "HPC" = "advanced/hpc.md" },
-            "advanced/finetuning.md",
-            "advanced/thresholds.md",
-            {"Raw model output" = "advanced/raw_outputs.md"},
-        ] },
-        { "Miscellaneous" = [
-            { "Version History" = "misc/versions.md" },
-            { "Troubleshooting" = "misc/troubleshooting.md" },
-        ] },
+    { "Home" = "index.md" },
+    { "Getting Started" = "getting-started.md" },
+    { "User Guide" = "guide.md" },
+    { "Advanced" = [
+        { "HPC" = "advanced/hpc.md" },
+        "advanced/finetuning.md",
+        "advanced/thresholds.md",
+        {"Raw model output" = "advanced/raw_outputs.md"},
     ] },
-
-    # { "BabyHuBERT" = [
-    #     "babyhubert/index.md"
-    # ]}
+    { "Miscellaneous" = [
+        { "Version History" = "misc/versions.md" },
+        { "Troubleshooting" = "misc/troubleshooting.md" },
+    ] },
 ]
 
 [project.theme]
 features = [
-    "navigation.tabs",
     "navigation.sections",
     "navigation.instant",
     "navigation.path",
@@ -38,15 +31,15 @@ features = [
     # "navigation.instant.preview", # experimental :/
     "toc.follow",
     "content.code.copy",
+    "content.code.annotate",
 ]
 favicon = "assets/baby.png"
 [project.theme.icon]
 logo = "lucide/baby"
 
 [project.theme.palette]
-# scheme = "slate"
-primary = "green"
-accent = "green"
+primary = "blue"
+accent = "blue"
 
 [project.extra]
 repo_url = "https://github.com/LAAC-LSCP/VTC"
