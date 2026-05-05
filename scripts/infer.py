@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import polars as pl
+from huggingface_hub import snapshot_download
 from pyannote.core import Annotation, Segment
 from segma.inference import get_list_of_files_to_process, run_inference_on_audios
 from segma.utils.io import get_audio_info
@@ -16,6 +17,11 @@ logging.basicConfig(
     datefmt="%Y.%m.%d %H:%M:%S",
 )
 logger = logging.getLogger("inference")
+
+MODEL_TO_REVISION = {
+    "2.1": "10265c5",
+    "2.0": "91e67b5",
+}
 
 
 def load_aa(path: Path):
@@ -168,59 +174,75 @@ def check_audio_files(audio_files_to_process: list[Path]) -> None:
 
 
 def main(
-    output: str,
-    uris: Path | None = None,
-    config: str = "VTC-2/model/config.toml",
-    wavs: str = "data/debug/wav",
-    checkpoint: str = "VTC-2/model/best.ckpt",
-    save_logits: bool = False,
+    wavs: str,
+    output: str | Path,
+    model: Literal["2.1"] = "2.1",
+    device: Literal["gpu", "cuda", "cpu", "mps"] = "gpu",
+    batch_size: int = 128,
+    recursive_search: bool = False,
     high_precision: bool = False,
     thresholds: None | Path = Path("thresholds/f1.toml"),
     min_duration_on_s: float = 0.1,
     min_duration_off_s: float = 0.1,
-    batch_size: int = 128,
     write_empty: bool = True,
-    write_csv: bool = True,
-    recursive_search: bool = False,
-    device: Literal["gpu", "cuda", "cpu", "mps"] = "gpu",
+    save_logits: bool = False,
     keep_raw: bool = False,
+    uris: Path | None = None,
     *args,
     **kwargs,
 ):
     """Run sliding inference on the given files and then merges the created segments.
 
     Args:
-        uris (list[str]): list of uris to use for prediction.
-        config (str, optional): Config file to be loaded and used for inference. Defaults to "VTC-2.0/model/config.yml".
-        wavs (str, optional): _description_. Defaults to "data/debug/wav".
-        checkpoint (str, optional): Path to a pretrained model checkpoint. Defaults to "VTC-2.0/model/best.ckpt".
-        output (str, optional): Output Path to the folder that will contain the final predictions.. Defaults to "".
+        wavs (str): List of audio files to run inference on.
+        output (str | Path): Output Path to the folder that will contain the final predictions.
+        model (Literal[&quot;2.1&quot;], optional): Version of the VTC model to use. Defaults to "2.1".
+        device (Literal[&quot;gpu&quot;, &quot;cuda&quot;, &quot;cpu&quot;, &quot;mps&quot;], optional): Device to run the model on. Defaults to "gpu".
+        batch_size (int, optional): Batch size to use during inference. Defaults to 128.
+        recursive_search (bool, optional): Recursively searches the wavs dir for audio files, can be time consuming. Defaults to False.
+        high_precision (bool, optional): Uses a high precision version of the VTC by using the high precision thresholds (`thresholds/hp.toml`). Defaults to False.
+        thresholds (None | Path, optional): Path to a thresholds dict, perform predictions using thresholding. Defaults to Path("thresholds/f1.toml").
+        min_duration_on_s (float, optional): Remove speech segments shorter than that many seconds. Defaults to .1.
+        min_duration_off_s (float, optional): Fill same-speaker gaps shorter than that many seconds. Defaults to .1.
+        write_empty (bool, optional): Write an empty RTTM files to disk when nothing was detected in an audio. Defaults to True.
         save_logits (bool, optional): If the prediction scripts saves the logits to disk, can be memory intensive. Defaults to False.
-        thresholds (None | Path, optional): Path to a thresholds dict, perform predictions using thresholding. Defaults to None.
-        min_duration_on_s (float, optional): Remove speech segments shorter than that many seconds.. Defaults to .1.
-        min_duration_off_s (float, optional): Fill same-speaker gaps shorter than that many seconds.. Defaults to .1.
-        batch_size (int): Batch size to use during inference. Defaults to 128.
-        keep_raw (bool, optional): If True, keeps the RTTM files before segment merging.
+        keep_raw (bool, optional): If True, keeps the RTTM files before segment merging. Defaults to False.
+        uris (Path | None, optional): Given a `.txt` file containing a list of newline separated uris (filenames), performs inference only on these audio files. Defaults to None.
 
     Raises:
-        ValueError: _description_
-        ValueError: _description_
-        ValueError: _description_
+        FileNotFoundError: Raised if the model checkpoint and config file where not correctly downloaded using `huggingface_hub.snapshot_download`.
     """
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+
+    logger.info(f"Using VTC model version {model}.")
+    model_path = snapshot_download(
+        repo_id="coml/VTC-2",
+        revision=MODEL_TO_REVISION[model],
+    )
+
+    config_path = Path(model_path) / "model" / "config.toml"
+    checkpoint_path = Path(model_path) / "model" / "best.ckpt"
+    if not config_path.exists() or not checkpoint_path.exists():
+        raise FileNotFoundError(
+            f"Something went wrong when downloading the model, the files could not be found on disk:\n\tPath: {model_path}"
+        )
+
+    logger.info(f"VTC-{model} model is stored here: {model_path}.")
+
+    # TODO - use assets
     if high_precision:
         thresholds = Path("thresholds/hp.toml")
     if thresholds:
         shutil.copy(str(thresholds), dst=output)
         logger.info(f"Using thresholds: {thresholds}")
 
-    output = Path(output)
-
-    logger.info("Running inference on audio files.")
+    logger.info("Running inference on audio files...")
     processed_files = run_inference_on_audios(
-        config=config,
+        config=config_path,
         uris=uris,
         wavs=wavs,
-        checkpoint=checkpoint,
+        checkpoint=checkpoint_path,
         output=output,
         thresholds=thresholds,
         batch_size=batch_size,
@@ -244,21 +266,20 @@ def main(
         shutil.rmtree(str(Path(output / "raw_rttm").absolute()))
 
     # NOTE - write RTTMs to `csv` files
-    if write_csv:
-        if keep_raw:
-            # NOTE - Raw RTTMs
-            raw_rttm_file_p = sorted(list((output / "raw_rttm").glob("*.rttm")))
-            raw_rttm_file_dfs = []
-            for rttm_file in raw_rttm_file_p:
-                raw_rttm_file_dfs.append(load_rttm(rttm_file))
-            pl.concat(raw_rttm_file_dfs).write_csv(output / "raw_rttm.csv")
+    if keep_raw:
+        # NOTE - Raw RTTMs
+        raw_rttm_file_p = sorted(list((output / "raw_rttm").glob("*.rttm")))
+        raw_rttm_file_dfs = []
+        for rttm_file in raw_rttm_file_p:
+            raw_rttm_file_dfs.append(load_rttm(rttm_file))
+        pl.concat(raw_rttm_file_dfs).write_csv(output / "raw_rttm.csv")
 
-        # NOTE - merged RTTMs
-        rttm_file_p = sorted(list((output / "rttm").glob("*.rttm")))
-        rttm_file_dfs = []
-        for rttm_file in rttm_file_p:
-            rttm_file_dfs.append(load_rttm(rttm_file))
-        pl.concat(rttm_file_dfs).write_csv(output / "rttm.csv")
+    # NOTE - merged RTTMs
+    rttm_file_p = sorted(list((output / "rttm").glob("*.rttm")))
+    rttm_file_dfs = []
+    for rttm_file in rttm_file_p:
+        rttm_file_dfs.append(load_rttm(rttm_file))
+    pl.concat(rttm_file_dfs).write_csv(output / "rttm.csv")
 
     logger.info(f"Inference finished, files can be found here: '{output.absolute()}/'")
 
@@ -266,10 +287,11 @@ def main(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config",
+        "--model",
         type=str,
-        default="VTC-2/model/config.toml",
-        help="Config file to be loaded and used for inference.",
+        default="2.1",
+        choices=["2.1"],  # "2.0"
+        help="Version of the model to use during inference. Defaults to `2.1`",
     )
     parser.add_argument(
         "--uris", help="Path to a file containing the list of uris to use."
@@ -280,13 +302,9 @@ if __name__ == "__main__":
         help="Folder containing the audio files to run inference on.",
     )
     parser.add_argument(
-        "--checkpoint",
-        default="VTC-2/model/best.ckpt",
-        help="Path to a pretrained model checkpoint.",
-    )
-    parser.add_argument(
         "--output",
         required=True,
+        type=Path,
         help="Output Path to the folder that will contain the final predictions.",
     )
     parser.add_argument(
