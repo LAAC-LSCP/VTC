@@ -2261,6 +2261,7 @@ name = "vtc"
 version = "2.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "huggingface-hub" },
     { name = "pyannote-audio" },
     { name = "segma" },
     { name = "tqdm" },
@@ -2273,6 +2274,7 @@ doc = [
 
 [package.metadata]
 requires-dist = [
+    { name = "huggingface-hub", specifier = ">=0.35.0" },
     { name = "pyannote-audio", specifier = ">=3.4.0" },
     { name = "segma", git = "https://github.com/arxaqapi/segma?rev=977225f2e0400465cd6a0c525f11c963223c8830" },
     { name = "tqdm", specifier = ">=4.67.1" },

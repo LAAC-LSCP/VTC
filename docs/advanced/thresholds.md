@@ -46,7 +46,7 @@ uv run scripts/infer.py      \
 
 Drag each slider, or click directly on a chart, to set the decision threshold for each category. The macro-F1 number at the top updates live as you tune.
 
-<iframe src="/assets/visualisations/threshold_plot.html?data=tuning_results.json"
+<iframe src="../assets/visualisations/threshold_plot.html?data=tuning_results.json"
         width="100%" height="700" style="border:0;"></iframe>
 
 !!! note "What the curves show"

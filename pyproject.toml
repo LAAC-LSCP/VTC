@@ -5,6 +5,7 @@ description = "The inference code for the Voice Type Classifier model"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "huggingface-hub>=0.35.0",
     "pyannote-audio>=3.4.0",
     "segma",
     "tqdm>=4.67.1",
@@ -19,4 +20,4 @@ doc = [
 ]
 
 [project.urls]
-documentation = "https://docs.cognitive-ml.fr/fastabx"
+documentation = "https://laac-lscp.github.io/VTC/"
