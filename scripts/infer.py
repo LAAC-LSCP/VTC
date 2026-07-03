@@ -209,11 +209,13 @@ def main(
     """
     if high_precision:
         thresholds = Path("thresholds/hp.toml")
+
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+    
     if thresholds:
         shutil.copy(str(thresholds), dst=output)
         logger.info(f"Using thresholds: {thresholds}")
-
-    output = Path(output)
 
     logger.info("Running inference on audio files.")
     processed_files = run_inference_on_audios(
