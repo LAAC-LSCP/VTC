@@ -1,12 +1,12 @@
 # Voice Type Classifier (VTC) 2.1
 
-The Voice Type Classifier is a classification model that given a input audio file, outputs a precise segmentation of speakers.
+The Voice Type Classifier identifies *who speaks when* in audio recordings.
 
 The four classes that the model will output are:
 - **FEM** stands for adult female speech
 - **MAL** stands for adult male speech
-- **KCHI** stands for key-child speech
-- **OCH** stands for other child speech
+- **KCHI** stands for key-child speech (the child wearing the microphone)
+- **OCH** stands for other children speech
 
 The model has been specifically trained to work with child-centered long-form recordings. These are recordings that can span multiple hours and have been collected using a portable recorder attached to the vest of a child (usually 0 to 5 years of age).
 

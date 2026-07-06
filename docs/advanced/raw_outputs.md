@@ -49,4 +49,4 @@ The default post-processing pipeline applied to model outputs:
 
 The segment-merging logic is the one from [pyannote.audio](https://github.com/pyannote/pyannote-audio).
 
-Pass `--keep_raw` to additionally write the segments produced after **step 1** but before **steps 2–3** to `<output>/raw_rttm/`. To inspect even earlier, prior to binarization, use `--save_logits` (this can produce large files).
+Pass `--keep_raw` to additionally write the segments produced after **step 1** but before **steps 2–3** to `<output>/raw_rttm/`. To inspect even earlier, prior to binarization, use `--save_probs` (this can produce large files).

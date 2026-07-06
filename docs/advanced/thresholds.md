@@ -75,7 +75,7 @@ uv run scripts/infer.py      \
 
 To re-tune thresholds on your own annotated data:
 
-1. Run inference on your validation set with `--save_logits` to dump per-frame model scores.
+1. Run inference on your validation set with `--save_probs` to dump per-frame model scores.
 2. Run the tuning pipeline (a per-class grid search) against your reference RTTM annotations.
 3. The pipeline emits the per-class thresholds maximising your chosen objective (default: macro-F1).
 

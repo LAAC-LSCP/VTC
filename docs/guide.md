@@ -117,20 +117,20 @@ If VTC crashes with a "CUDA out of memory" error, lower the batch size and try a
 Complete list of arguments accepted by `scripts/infer.py`.
 
 | <div style="width: 140px;">Argument</div> | Default    | Description                                                        |
-|-----------------------|--------------------------------|--------------------------------------------------------------------|
-| `--config`            | `VTC-2/model/config.yml`     | Config file to be loaded and used for inference.                   |
-| `--checkpoint`        | `VTC-2/model/best.ckpt`      | Path to a pretrained model checkpoint.                             |
-| `--wavs`              | **required**                   | Folder containing the audio files to run inference on.             |
-| `--output`            | **required**                   | Output path to the folder that will contain the final predictions. |
-| `--uris`              | —                              | Path to a file containing the list of URIs to use.                 |
-| `--save_logits`       | `False`                        | Save the logits to disk. Can be memory intensive.                  |
-| `--thresholds`        | —                              | Path to a thresholds dict to perform predictions via thresholding. |
-| `--min_duration_on_s` | `0.1`                          | Remove speech segments shorter than that many seconds.             |
-| `--min_duration_off_s`| `0.1`                          | Fill same-speaker gaps shorter than that many seconds.             |
-| `--batch_size`        | `128`                          | Batch size for the forward pass of the model.                      |
-| `--recursive_search`  | `False`                        | Recursively search for `.wav` files. May be slow.                  |
-| `--device`            | `cuda`                         | Device to use. Choices: `gpu`, `cuda`, `cpu`, `mps`.               |
-| `--keep_raw`          | `False`                        | Keep raw RTTM and save to `<output>/raw_rttm/`.                    |
+|-------------------------------------------|--------------------------------|--------------------------------------------------------------------|
+| `--config`                                | `VTC-2/model/config.yml`     | Config file to be loaded and used for inference.                   |
+| `--checkpoint`                            | `VTC-2/model/best.ckpt`      | Path to a pretrained model checkpoint.                             |
+| `--wavs`                                  | **required**                   | Folder containing the audio files to run inference on.             |
+| `--output`                                | **required**                   | Output path to the folder that will contain the final predictions. |
+| `--uris`                                  | —                              | Path to a file containing the list of URIs to use.                 |
+| `--save_probs`                            | `False`                        | Save the probabilities to disk. Can be memory intensive.           |
+| `--thresholds`                            | —                              | Path to a thresholds dict to perform predictions via thresholding. |
+| `--min_duration_on_s`                     | `0.1`                          | Remove speech segments shorter than that many seconds.             |
+| `--min_duration_off_s`                    | `0.1`                          | Fill same-speaker gaps shorter than that many seconds.             |
+| `--batch_size`                            | `128`                          | Batch size for the forward pass of the model.                      |
+| `--recursive_search`                      | `False`                        | Recursively search for `.wav` files. May be slow.                  |
+| `--device`                                | `cuda`                         | Device to use. Choices: `gpu`, `cuda`, `cpu`, `mps`.               |
+| `--keep_raw`                              | `False`                        | Keep raw RTTM and save to `<output>/raw_rttm/`.                    |
 
 ### Example commands
 
@@ -196,7 +196,7 @@ Predictions are post-processed before being written out:
 2. Removal of segments shorter than `--min_duration_on_s` seconds.
 3. Merging of same-class segments separated by less than `--min_duration_off_s` seconds.
 
-To inspect the model's pre-post-processing output, pass `--keep_raw`; the pre-binarization frame-level scores can be dumped with `--save_logits`. -->
+To inspect the model's pre-post-processing output, pass `--keep_raw`; the pre-binarization frame-level scores can be dumped with `--save_probs`. -->
 
 <!-- ## test
 

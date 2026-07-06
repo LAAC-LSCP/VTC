@@ -173,12 +173,13 @@ def main(
     config: str = "VTC-2/model/config.toml",
     wavs: str = "data/debug/wav",
     checkpoint: str = "VTC-2/model/best.ckpt",
-    save_logits: bool = False,
+    save_probs: bool = False,
     high_precision: bool = False,
     thresholds: None | Path = Path("thresholds/f1.toml"),
     min_duration_on_s: float = 0.1,
     min_duration_off_s: float = 0.1,
     batch_size: int = 128,
+    stride_pct: float = 0.25,
     write_empty: bool = True,
     write_csv: bool = True,
     recursive_search: bool = False,
@@ -187,32 +188,12 @@ def main(
     *args,
     **kwargs,
 ):
-    """Run sliding inference on the given files and then merges the created segments.
-
-    Args:
-        uris (list[str]): list of uris to use for prediction.
-        config (str, optional): Config file to be loaded and used for inference. Defaults to "VTC-2.0/model/config.yml".
-        wavs (str, optional): _description_. Defaults to "data/debug/wav".
-        checkpoint (str, optional): Path to a pretrained model checkpoint. Defaults to "VTC-2.0/model/best.ckpt".
-        output (str, optional): Output Path to the folder that will contain the final predictions.. Defaults to "".
-        save_logits (bool, optional): If the prediction scripts saves the logits to disk, can be memory intensive. Defaults to False.
-        thresholds (None | Path, optional): Path to a thresholds dict, perform predictions using thresholding. Defaults to None.
-        min_duration_on_s (float, optional): Remove speech segments shorter than that many seconds.. Defaults to .1.
-        min_duration_off_s (float, optional): Fill same-speaker gaps shorter than that many seconds.. Defaults to .1.
-        batch_size (int): Batch size to use during inference. Defaults to 128.
-        keep_raw (bool, optional): If True, keeps the RTTM files before segment merging.
-
-    Raises:
-        ValueError: _description_
-        ValueError: _description_
-        ValueError: _description_
-    """
     if high_precision:
         thresholds = Path("thresholds/hp.toml")
 
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
-    
+
     if thresholds:
         shutil.copy(str(thresholds), dst=output)
         logger.info(f"Using thresholds: {thresholds}")
@@ -228,7 +209,8 @@ def main(
         batch_size=batch_size,
         device=device,
         recursive=recursive_search,
-        save_logits=save_logits,
+        save_probs=save_probs,
+        stride_pct=stride_pct,
         logger=logger,
     )
 
@@ -291,11 +273,10 @@ if __name__ == "__main__":
         required=True,
         help="Output Path to the folder that will contain the final predictions.",
     )
-    parser.add_argument(
-        "--save_logits",
-        action="store_true",
-        help="If the prediction scripts saves the logits to disk, can be memory intensive.",
-    )
+    parser.add_argument("--save_probs", action="store_true",
+                        help="Save averaged per-frame probabilities to disk.")
+    parser.add_argument("--stride_pct", default=0.25, type=float,
+                        help="Sliding window stride as a fraction of chunk_duration_s (0.5 = 50%% overlap, 0.25 = 75%%).")
     parser.add_argument(
         "--thresholds",
         type=Path,

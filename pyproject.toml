@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-segma = { git = "https://github.com/MarvinLvn/segma", rev = "dad876e2268799ff12671a865167126eef66c34c" }
+segma = { git = "https://github.com/MarvinLvn/segma", rev = "81dc44327a18c77fe754839dbb2b28563ba3cfbb" }
 
 [dependency-groups]
 doc = [
