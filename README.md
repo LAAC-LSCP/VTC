@@ -1,4 +1,4 @@
-# Voice Type Classifier (VTC) 2.1
+# Voice Type Classifier (VTC) 2.2
 
 The Voice Type Classifier identifies *who speaks when* in audio recordings.
 
