@@ -41,7 +41,6 @@ Finally, you can install python dependencies with the following command:
 uv sync
 ```
 
-
 ## 2. Inference
 
 Inference is done using a checkpoint of the model, linking the corresponding config file used for training and the list of audio files to run the model on. You audio files should be in the `.wav` format, sampled at 16 000 kHz and contain a single channel (mono).
@@ -66,9 +65,6 @@ The model outputs are saved to `<output_folder>/` with the following structure:
 └── 📄 raw_rttm.csv   # CSV version of raw speaker segments
 ```
 
-> [!NOTE]
-> Segment merging is applied to the main output. See the [pyannote.audio description](https://github.com/pyannote/pyannote-audio/blob/240a7f3ef60bc613169df860b536b10e338dbf3c/pyannote/audio/pipelines/resegmentation.py#L79-L82) for details.
-
 #### Helper script
 An example of a bash script is given to perform inference in `scripts/run.sh`. Simply set the correct variables in the script and run it:
 
@@ -87,59 +83,46 @@ We tested the inference pipeline on multiple GPUs and CPUs and display the expec
 
 | Batch size | Hardware        | Speedup factor |
 |:----------:|:----------------|:--------------:|
-| 64         | Quadro RTX 8000 | 1/152          |
-| 128        | Quadro RTX 8000 | 1/286          |
-| 256        | Quadro RTX 8000 | 1/531          |
-| 64         | A40             | 1/450          |
-| 128        | A40             | 1/358          |
-| 256        | A40             | 1/650          |
-| 64         | H100            | 1/182          |
-| 128        | H100            | 1/466          |
-| 256        | H100            | **1/905**      |
+| 64         | H100            |      1/46      |
+| 128        | H100            |     1/117      |
+| 256        | H100            |   **1/226**    |
 
 </td><td>
 
-| Batch size | Hardware                      | Speedup factor|
-|:----------:|:------------------------------|:-------------:|
-| 64         | Intel(R) Xeon(R) Silver 4214R | 1/16          |
-| 128        | Intel(R) Xeon(R) Silver 4214R | 1/15          |
-| 256        | Intel(R) Xeon(R) Silver 4214R | 1/16          |
-| 64         | AMD EPYC 7453 28-Core         | 1/20          |
-| 128        | AMD EPYC 7453 28-Core         | 1/21          |
-| 256        | AMD EPYC 7453 28-Core         | 1/22          |
-| 64         | AMD EPYC 9334 32-Core         | 1/25          |
-| 128        | AMD EPYC 9334 32-Core         | 1/26          |
-| 256        | AMD EPYC 9334 32-Core         | **1/29**      |
+| Batch size | Hardware                      | Speedup factor |
+|:----------:|:------------------------------|:--------------:|
+| 64         | AMD EPYC 9334 32-Core         |      1/6       |
+| 128        | AMD EPYC 9334 32-Core         |      1/7       |
+| 256        | AMD EPYC 9334 32-Core         |    **1/7**     |
 
 </td></tr> </table>
 
-<!-- [297353] seconds in 328.475611 s -->
-It takes approximatively $1/905$ of the audio duration to run the model with a batch size of 256 on an H100 GPU.
-- For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 4$ seconds. ($3600 / 905$)
-- For a $16\text{ h}$ longform audio, the inference will run for $\approx 1 \text{ minute}$ and $4 \text{ seconds}$. ($16 * 3600 / 905$)
+It takes approximatively $1/7$ of the audio duration to run the model with a batch size of 256 on an H100 GPU.
+- For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 16$ seconds. ($3600 / 226$)
+- For a $16\text{ h}$ longform audio, the inference will run for $\approx 4 \text{ minutes}$. ($16 * 3600 / 226$)
 
 
 On a Intel(R) Xeon(R) Silver 4214R CPU with a batch size of 64, the inference pipeline will be quite slow:
-- For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 4$ minutes. ($3600 / 15$)
-- For a $16\text{ h}$ longform audio, the inference will run for $\approx 1 \text{ hour}$ and $4 \text{ minutes}$. ($16 * 3600 / 15$)
+- For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 8$ minutes. ($3600 / 7$)
+- For a $16\text{ h}$ longform audio, the inference will run for $\approx 2.2 \text{ hours}$. ($16 * 3600 / 7$)
 
 ### 3.2 Model Performance on the heldout set
 
 We evaluate the new model, VTC 2.0, on a heldout set and compare it to the previous models and the Human performance (Human 2).
 
-| Model          | KCHI |  OCH |  MAL |  FEM | Average F1-score |
-|----------------|:----:|:----:|:----:|:----:|:--------:|
-| VTC 1.0        | 68.2 | 30.5 | 41.2 | 63.7 |   50.9   |
-| VTC 1.5        | 68.4 | 20.6 | 56.7 | 68.9 |   53.6   |
-| VTC 2.0        | **71.8** | 51.4 | 60.3 | 74.8 | 64.6 |
-| VTC 2.1        | 67.1 | **56.1** | **68.8** | **75.5** | **66.9** |
-| Human 2        | 79.7 | 60.4 | 67.6 | 71.5 |   69.8   |
+| Model   |   KCHI   |   OCH    |   MAL    |   FEM    | Average F1-score |
+|---------|:--------:|:--------:|:--------:|:--------:|:----------------:|
+| VTC 1.0 |   68.2   |   30.5   |   41.2   |   63.7   |       50.9       |
+| VTC 1.5 |   68.4   |   20.6   |   56.7   |   68.9   |       53.6       |
+| VTC 2.0 | **71.8** |   51.4   |   60.3   |   74.8   |       64.6       |
+| VTC 2.1 |   67.1   |   56.1   |   68.8   |   75.5   |       66.9       |
+| VTC 2.2 |   68.5   | **58.1** | **70.9** | **75.6** |     **68.3**     |
+| Human 2 |   79.7   |   60.4   |   67.6   |   71.5   |       69.8       |
 
 **Table 1**: F1-scores (%) obtained on the standard test set VTC 1.0, VTC 1.5, VTC 2.0, and a second human annotator.
 The best model is indicated in bold.
 
-As displayed in table 1, our model performs better than previous iterations with performances close to the Human performances. VTC 2.1 even surpasses human like performance on the **FEM** class.
-
+As displayed in table 1, our model performs better than previous iterations with performances close to the Human performances. 
 
 ---
 ## 4. Citation
@@ -195,6 +178,6 @@ GitHub repository: [github.com/MarvinLvn/voice-type-classifier](https://github.c
 }
 ```
 
-This work uses the [segma](https://github.com/arxaqapi/segma) library which is heavely inspired by [pyannote.audio](https://github.com/pyannote/pyannote-audio).
+This work uses the [segma](https://github.com/arxaqapi/segma) library which is heavily inspired by [pyannote.audio](https://github.com/pyannote/pyannote-audio).
 
 This work was performed using HPC resources from GENCI-IDRIS (Grant 2024-AD011015450 and 2025-AD011016414) and was developed as part of the ExELang project funded by the European Union (ERC, ExELang, Grant No 101001095).
