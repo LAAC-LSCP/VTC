@@ -13,13 +13,6 @@ else
     missing_deps+=("uv")
 fi
 
-# Check for git-lfs
-if command -v git-lfs &> /dev/null; then
-    echo "✓ git-lfs is installed ($(git-lfs --version))"
-else
-    echo "✗ git-lfs is NOT installed"
-    missing_deps+=("git-lfs")
-fi
 
 # Check for ffmpeg
 if command -v ffmpeg &> /dev/null; then

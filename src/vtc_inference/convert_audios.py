@@ -53,7 +53,7 @@ def convert_audios(
         encoder.to_file(output / audio_p.name)
 
 
-if __name__ == "__main__":
+def convert_audios_cli() -> None:
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -75,3 +75,7 @@ if __name__ == "__main__":
         output=args.output,
         allow_upsampling=args.allow_upsampling,
     )
+
+
+if __name__ == "__main__":
+    convert_audios_cli()
