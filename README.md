@@ -30,8 +30,7 @@ As system dependencies, ensure that [uv](https://docs.astral.sh/uv/), [ffmpeg](h
 You can now clone the repo with:
 
 ```bash
-git lfs install
-git clone --recurse-submodules https://github.com/LAAC-LSCP/VTC.git
+git clone https://github.com/LAAC-LSCP/VTC.git
 cd VTC
 ```
 
@@ -48,7 +47,7 @@ If not, you can use the `scripts/convert.py` file to convert your audios to 16 0
 
 
 ```bash
-uv run scripts/infer.py \
+uv run vtc-infer \
     --wavs audios \        # path to the folder containing the audio files
     --output predictions \ # output folder
     --device cpu           # device to run the model on: ('cpu', 'cuda' or 'gpu', 'mps')
@@ -66,10 +65,10 @@ The model outputs are saved to `<output_folder>/` with the following structure:
 ```
 
 #### Helper script
-An example of a bash script is given to perform inference in `scripts/run.sh`. Simply set the correct variables in the script and run it:
+An example of a bash script is given to perform inference in `run.sh`. Simply set the correct variables in the script and run it:
 
 ```bash
-sh scripts/run.sh
+sh run.sh
 ````
 
 ## 3. Model Performance
