@@ -6,6 +6,7 @@ from huggingface_hub import snapshot_download
 VersionStr: t.TypeAlias = str
 REPO_ID = "coml/VTC-2"
 MODEL_TO_REVISION = {
+    "2.2": "91167f6",
     "2.1": "91167f6",
     "2.0": "91e67b5",
 }
