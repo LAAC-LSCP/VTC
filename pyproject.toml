@@ -5,18 +5,33 @@ description = "The inference code for the Voice Type Classifier model"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "huggingface-hub>=0.35.0",
     "pyannote-audio>=3.4.0",
     "segma",
     "tqdm>=4.67.1",
 ]
 
+[project.scripts]
+vtc-infer = "vtc_inference.cli:vtc_infer_cli"
+convert-audios = "vtc_inference.convert_audios:convert_audios_cli"
+
+[project.urls]
+documentation = "https://docs.cognitive-ml.fr/fastabx"
+
 [tool.uv.sources]
 segma = { git = "https://github.com/MarvinLvn/segma", rev = "e6cebc5b232ac1a30554caa7ec35dd22057d07f0" }
 
 [dependency-groups]
+dev = [
+    "ipython>=9.15.0",
+]
 doc = [
     "zensical>=0.0.37",
 ]
 
-[project.urls]
-documentation = "https://docs.cognitive-ml.fr/fastabx"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vtc_inference"]
