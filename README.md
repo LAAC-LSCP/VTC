@@ -131,20 +131,20 @@ The training code for BabyHuBERT can be found here: [LAAC-LSCP/BabyHuBERT](https
 To cite this work, please use the following bibtex.
 
 ```bibtex
-@misc{charlot2025babyhubertmultilingualselfsupervisedlearning,
-    title={BabyHuBERT: Multilingual Self-Supervised Learning for Segmenting Speakers in Child-Centered Long-Form Recordings}, 
-    author={Théo Charlot and Tarek Kunze and Maxime Poli and Alejandrina Cristia and Emmanuel Dupoux and Marvin Lavechin},
-    year={2025},
-    eprint={2509.15001},
-    archivePrefix={arXiv},
-    primaryClass={eess.AS},
-    url={https://arxiv.org/abs/2509.15001}, 
+@inproceedings{charlot26_interspeech,
+  title     = {{BabyHuBERT: Multilingual Self-Supervised Learning for Segmenting Speakers in Child-Centered Long-Form Recordings}},
+  author    = {Théo Charlot and Tarek Kunze and Maxime Poli and Alejandrina Cristia and Emmanuel Dupoux and Marvin Lavechin},
+  year      = {2026},
+  booktitle = {{Interspeech 2026}},
+  pages     = {4896--4901},
+  doi       = {10.21437/Interspeech.2026-2772},
+  issn      = {2958-1796},
 }
 ```
 
 Or the following APA formatted citation
 ```APA
-Charlot, T., Kunze, T., Poli, M., Cristia, A., Dupoux, E., & Lavechin, M. (2026). BabyHuBERT: Multilingual Self-Supervised Learning for Segmenting Speakers in Child-Centered Long-Form Recordings. arXiv [Eess.AS]. Retrieved from http://arxiv.org/abs/2509.15001
+Charlot, T., Kunze, T., Poli, M., Cristia, A., Dupoux, E., Lavechin, M. (2026) BabyHuBERT: Multilingual Self-Supervised Learning for Segmenting Speakers in Child-Centered Long-Form Recordings. Proc. Interspeech 2026, 4896-4901, doi: 10.21437/Interspeech.2026-2772
 ```
 
 ## 5. Acknowledgement
