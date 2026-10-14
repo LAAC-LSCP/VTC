@@ -85,6 +85,8 @@ def prepare_vtc_inference(
     location = thresholds_location if thresholds_location is not None else checkpoint
     thresholds_name = "hp" if high_precision else (thresholds or "f1")
     thresholds_path = resolve_thresholds_path(thresholds_name, location)
+    shutil.copy(thresholds_path, output_dir)
+    logger.info(f"Using thresholds: {thresholds_path}")
 
     return VtcInferenceParams(
         output=output_dir,
