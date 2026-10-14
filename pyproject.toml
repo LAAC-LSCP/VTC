@@ -16,7 +16,7 @@ vtc-infer = "vtc_inference.cli:vtc_infer_cli"
 convert-audios = "vtc_inference.convert_audios:convert_audios_cli"
 
 [project.urls]
-documentation = "https://docs.cognitive-ml.fr/fastabx"
+documentation = "https://laac-lscp.github.io/VTC/"
 
 [tool.uv.sources]
 segma = { git = "https://github.com/MarvinLvn/segma", rev = "e6cebc5b232ac1a30554caa7ec35dd22057d07f0" }
