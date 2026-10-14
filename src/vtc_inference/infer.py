@@ -51,7 +51,7 @@ def prepare_vtc_inference(
     save_probs: bool = False,
     high_precision: bool = False,
     thresholds: str | None = "f1",
-    thresholds_location: Path | VersionStr = "2.1",
+    thresholds_location: Path | VersionStr | None = None,
     min_duration_on_s: float = 0.1,
     min_duration_off_s: float = 0.1,
     batch_size: int = 128,
@@ -82,14 +82,9 @@ def prepare_vtc_inference(
     checkpoint_path = resolve_model_path(checkpoint)
 
     # Note: this overrides a custom threshold
-    thresholds_path: Path | None = None
-    if high_precision:
-        thresholds_path = resolve_thresholds_path("hp", "2.1")
-    else:
-        location = thresholds_location if thresholds_location is not None else checkpoint
-        thresholds_name = thresholds if thresholds else "f1"
-        thresholds_path = resolve_thresholds_path(thresholds_name, location)
-
+    location = thresholds_location if thresholds_location is not None else checkpoint
+    thresholds_name = "hp" if high_precision else (thresholds or "f1")
+    thresholds_path = resolve_thresholds_path(thresholds_name, location)
 
     return VtcInferenceParams(
         output=output_dir,

@@ -43,7 +43,7 @@ def vtc_infer_cli() -> None:
     parser.add_argument(
         "--thresholds-location",
         type=str,
-        default="2.2",
+        default=None,
         help=(
             "Local directory/file containing the thresholds TOML, or a known "
             "model version key. Defaults to wherever --checkpoint resolves to."
@@ -51,6 +51,7 @@ def vtc_infer_cli() -> None:
     )
     parser.add_argument(
         "--thresholds-name",
+        dest="thresholds",
         type=str,
         default="f1",
         help=(
