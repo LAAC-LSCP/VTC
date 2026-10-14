@@ -8,7 +8,6 @@ REPO_ID = "coml/VTC-2"
 MODEL_TO_REVISION = {
     "2.2": "91167f6",
     "2.1": "91167f6",
-    "2.0": "91e67b5",
 }
 _WEIGHTS_SUFFIXES = ("*.pt", "*.ckpt")
 

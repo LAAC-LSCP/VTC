@@ -7,31 +7,29 @@ icon: octicons/search-16
 
 ## What "raw" means
 
-VTC's underlying model produces a frame-by-frame guess about who is speaking. The result is choppy: a single person talking can come out as several short detections with small gaps between them, which isn't very useful for analysis.
+The model makes a decision for every short frame of audio, so its output is fragmented: one person speaking can appear as several short segments separated by small gaps. Before writing the results, VTC cleans them up in two steps:
 
-So before saving the results, VTC does two cleanups:
+1. **Merge segments of the same speaker type** separated by a gap shorter than 0.1 s.
+2. **Drop segments shorter than 0.1 s**, which are most likely errors.
 
-1. **Drop very short isolated detections** that are most likely model glitches.
-2. **Merge same-speaker detections** that are separated by only a tiny gap (under 100 ms by default) into a single longer segment.
+The cleaned output suits most analyses. The raw output is useful for debugging unexpected results, writing your own post-processing, or studying the model itself.
 
-For most users, the cleaned-up output is what you want. But if you're debugging unexpected results, building your own custom post-processing, or studying the model's behaviour itself, the raw output is more informative.
+!!! info
+    Both durations can be changed when running VTC; see the [example commands](../guide.md#example-commands).
 
-!!! info 
-    You can tweak these settings at inference time yourself, head over to the [example commands](../guide.md#example-commands) section in the guide page for more informations.
+## Keeping the raw output
 
-## How to keep the raw output
-
-Add the `--keep_raw` flag when running VTC. The pre-cleanup detections will be saved alongside the cleaned-up output:
+Add the `--keep_raw` flag. The raw segments are then saved next to the cleaned ones:
 
 ```
 <output_folder>/
 ├── 📂 rttm/          # Cleaned-up segments (default output)
-├── 📂 raw_rttm/      # Pre-cleanup, raw model detections (only if --keep_raw)
 ├── 📄 rttm.csv
-└── 📄 raw_rttm.csv
+├── 📂 raw_rttm/      # Raw model segments (only with --keep_raw)
+└── 📄 raw_rttm.csv   # (only with --keep_raw)
 ```
 
-The `raw_rttm/` folder follows the same RTTM format as `rttm/`; it just contains more (and shorter) segments.
+`raw_rttm/` uses the same RTTM format as `rttm/`, with more and shorter segments.
 
 <!-- For an example on how to use the inference script with different  segment merging parameters, head over to the [example commands](../guide.md#example-commands)  section. -->
 
@@ -39,14 +37,13 @@ The `raw_rttm/` folder follows the same RTTM format as `rttm/`; it just contains
 
 ## Technical Reference
 
-> *Implementation details of the post-processing pipeline.*
+Processing steps applied to the model output:
 
-The default post-processing pipeline applied to model outputs:
+1. **Sliding-window averaging.** The model runs on overlapping windows (step set by `--stride_pct`, default `0.25` of the window length), and the per-frame scores of overlapping windows are averaged.
+2. **Per-frame binarization** of the four class scores with the active threshold set: `f1.toml` by default, `hp.toml` with `--high-precision`, or a custom file selected with `--thresholds-location` and `--thresholds-name`. See [Threshold selection](thresholds.md).
+3. **Gap filling:** same-class segments separated by less than `--min_duration_off_s` seconds (default `0.1`) are merged.
+4. **Short-segment removal:** segments shorter than `--min_duration_on_s` seconds (default `0.1`) are dropped.
 
-1. **Per-frame binarization** of the four class scores against the active threshold set (`f1.toml` by default; `hp.toml` with `--high_precision`; or any TOML passed via `--thresholds`). See [Threshold selection](thresholds.md).
-2. **Drop short segments** of duration less than `--min_duration_on_s` seconds (default `0.1`).
-3. **Bridge same-class gaps** of duration less than `--min_duration_off_s` seconds (default `0.1`).
+Steps 3 and 4 use [pyannote.audio](https://github.com/pyannote/pyannote-audio) annotation operations.
 
-The segment-merging logic is the one from [pyannote.audio](https://github.com/pyannote/pyannote-audio).
-
-Pass `--keep_raw` to additionally write the segments produced after **step 1** but before **steps 2–3** to `<output>/raw_rttm/`. To inspect even earlier, prior to binarization, use `--save_probs` (this can produce large files).
+`--keep_raw` writes the segments obtained after step 2 to `<output>/raw_rttm/`. `--save_probs` writes the averaged per-frame probabilities from step 1 to `<output>/probs/<file>-probs_dict_t.pt`, a PyTorch file with one tensor per class. These files can be large.

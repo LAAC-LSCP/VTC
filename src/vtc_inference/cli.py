@@ -8,7 +8,7 @@ def vtc_infer_cli() -> None:
         "--config",
         type=str,
         default="2.2",
-        help="Local config.toml file/directory, or a known model version key (e.g. '2.1', '2.0').",
+        help="Local config.toml file/directory, or a known model version key (e.g. '2.2', '2.1').",
     )
     parser.add_argument(
         "--uris", help="Path to a file containing the list of uris to use."
@@ -22,7 +22,7 @@ def vtc_infer_cli() -> None:
         "--checkpoint",
         default="2.2",
         type=str,
-        help="Local checkpoint file/directory, or a known model version key (e.g. '2.1', '2.0').",
+        help="Local checkpoint file/directory, or a known model version key (e.g. '2.2', '2.1').",
     )
     parser.add_argument(
         "--output",

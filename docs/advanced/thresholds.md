@@ -4,80 +4,97 @@ icon: lucide/chart-column-decreasing
 
 # Threshold selection
 
-> **VTC has a tunable "sensitivity" setting for each speaker category. The default settings work well for most users; this page is for those who want to deliberately trade off catching every segment ("recall") against avoiding wrong labels ("precision").**
+Each speaker category has a threshold that controls how readily VTC assigns it. The default thresholds suit most uses. Change them if you want to favour finding all speech (recall) or avoiding wrong labels (precision).
 
-## What thresholds actually do
+## What thresholds do
 
-For every short slice of audio (a few hundredths of a second), VTC produces four numbers between 0 and 1, one per speaker category, representing how confident the model is that the category is currently speaking. To turn those continuous scores into yes/no decisions ("Was the key child speaking at this moment? Yes or no?"), VTC compares each score against a **threshold**. If the score is above the threshold, the category is marked as active for that slice; otherwise it is not.
+For every frame of audio (a few hundredths of a second), the model outputs four scores between 0 and 1, one per category, that express how likely it is that this category is speaking. VTC marks a category as active in that frame when its score is above the category's **threshold**.
 
-You can think of the threshold as the bar a category has to clear before VTC will commit to a label:
+- A **lower threshold** produces more segments: less speech is missed (higher **recall**), but more labels are wrong.
+- A **higher threshold** produces fewer segments, but more of them are correct (higher **precision**).
 
-- **Lower threshold** → easier to clear → VTC labels *more* segments. Good if you don't want to miss anything (high **recall**), but you'll get more wrong labels too.
-- **Higher threshold** → harder to clear → VTC labels *fewer* segments, but the ones it does label are more likely to be correct (high **precision**).
-
-There is no universally best threshold, the right value depends on whether you care more about avoiding misses (favouring lower thresholds) or avoiding false alarms (favouring higher thresholds).
+The right choice depends on whether missed speech or false detections matter more for your analysis.
 
 ---
 
 ## Built-in threshold sets
 
-VTC ships with two pre-tuned threshold sets. The default balances recall and precision; the high-precision set favours fewer wrong labels at the cost of missing more speech.
-
-| Threshold set | File | When to use it |
+| Threshold set | Name | When to use it |
 |---|---|---|
-| **Balanced (default)** | `thresholds/f1.toml` | General use — maximises overall F1 (a balance of recall and precision). |
-| **High precision**     | `thresholds/hp.toml` | When you would rather miss some speech than risk introducing false detections. |
+| **Balanced (default)** | `f1` | General use. Maximises F1, which balances recall and precision. |
+| **High precision**     | `hp` | When you would rather miss some speech than get false detections. |
 
-Both threshold sets were tuned on the BabyTrain-2025 validation set. The balanced set is selected automatically; to use the high-precision set, add the `--high_precision` flag, or pass the file directly with `--thresholds`:
+Both sets were tuned on the BabyTrain-2025 validation set. They are downloaded with the model, from the `thresholds/` folder of the [`coml/VTC-2`](https://huggingface.co/coml/VTC-2) Hugging Face repository. To use the high-precision set, add `--high-precision`:
 
 ```bash
-uv run scripts/infer.py      \
+uv run vtc-infer             \
     --wavs <audio_folder>    \
     --output <output_folder> \
-    --high_precision \
+    --high-precision         \
     --device cpu
 ```
+
+VTC copies the threshold file it used (`f1.toml` or `hp.toml`) into the output folder.
 
 ---
 
 ## Try it interactively
 
-> **The widget below lets you move each threshold up and down and watch the effect on overall accuracy in real time. This is the easiest way to build intuition for what thresholds do.**
-
-Drag each slider, or click directly on a chart, to set the decision threshold for each category. The macro-F1 number at the top updates live as you tune.
+Drag the sliders, or click on a chart, to set the threshold of each category. The macro-F1 at the top updates as you go.
 
 <iframe src="../assets/visualisations/threshold_plot.html?data=tuning_results.json"
         width="100%" height="700" style="border:0;"></iframe>
 
 !!! note "What the curves show"
-    Each curve traces how the F1 score for one category changes as you sweep its threshold from 0 to 1. The peak of each curve is the value that maximises that category's F1 in isolation; the default `f1.toml` thresholds correspond to those peaks.
+    Each curve shows a category's F1 score as its threshold goes from 0 to 1. The default `f1.toml` thresholds are at the peaks of these curves.
 
 
 ---
 
 ## Technical Reference
 
-> *Implementation details for engineers tuning their own thresholds.*
-
 ### Custom threshold files
 
-To use your own thresholds, create a file `custom.toml` following the [TOML specification](https://toml.io/en/) and pass it to the inference script with `--thresholds`:
+Write your thresholds in a [TOML](https://toml.io/en/) file, such as `my_thresholds/custom.toml`, with one section per class. The values below are those of the default `f1` set:
+
+```toml
+[KCHI]
+lower_bound = 0.437
+upper_bound = 1.0
+
+[OCH]
+lower_bound = 0.378
+upper_bound = 1.0
+
+[MAL]
+lower_bound = 0.429
+upper_bound = 1.0
+
+[FEM]
+lower_bound = 0.377
+upper_bound = 1.0
+```
+
+Pass the file's location with `--thresholds-location` and its name, without `.toml`, with `--thresholds-name`:
 
 ```bash
-uv run scripts/infer.py      \
+uv run vtc-infer             \
     --wavs <audio_folder>    \
     --output <output_folder> \
-    --thresholds thresholds/custom.toml \
+    --thresholds-location my_thresholds/ \
+    --thresholds-name custom \
     --device cpu
 ```
+
+`--thresholds-location` accepts the `.toml` file itself or a folder. A folder is searched recursively and must contain exactly one file with that name. Without `--thresholds-location`, VTC looks in the same place as the model given by `--checkpoint`. `--high-precision` overrides `--thresholds-name`, so it looks for an `hp.toml` file in `--thresholds-location`. The thresholds file is copied into the output folder under its own name, here `custom.toml`.
 
 ### Threshold tuning workflow
 
 To re-tune thresholds on your own annotated data:
 
-1. Run inference on your validation set with `--save_probs` to dump per-frame model scores.
-2. Run the tuning pipeline (a per-class grid search) against your reference RTTM annotations.
-3. The pipeline emits the per-class thresholds maximising your chosen objective (default: macro-F1).
+1. Run inference on your validation set with `--save_probs` to save the per-frame scores.
+2. Run the tuning pipeline, a per-class grid search, against your reference RTTM annotations.
+3. The pipeline outputs the per-class thresholds that maximise the chosen objective (macro-F1 by default).
 
 !!! note "Per-class independence"
-    Each class's threshold is optimised independently — the search does not jointly account for cross-class trade-offs.
+    Each class's threshold is optimised separately; the search does not account for trade-offs between classes.

@@ -1,5 +1,6 @@
 *.wav
 data/
 out/
+site/
 
 __pycache__
