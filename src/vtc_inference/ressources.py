@@ -93,6 +93,8 @@ def resolve_model_path(model: Path | VersionStr) -> Path:
         pt_file = _resolve_pt_path(local_dir)
         if pt_file is not None:
             return pt_file
+        if model not in MODEL_TO_REVISION:
+            raise ModelNotFoundError(f"No single .pt or .ckpt file found in {local_dir}")
 
     repo_dir = _download_repo(model)
     pt_file = repo_dir / "model" / "best.ckpt"
@@ -123,6 +125,8 @@ def resolve_model_config_path(model: Path | VersionStr) -> Path:
         config_file = _resolve_named_file(local_path, "config.toml")
         if config_file is not None:
             return config_file
+        if model not in MODEL_TO_REVISION:
+            raise ModelNotFoundError(f"No config.toml found in {local_path}")
 
     repo_dir = _download_repo(model)
     config_file = repo_dir / "model" / "config.toml"
@@ -154,6 +158,8 @@ def resolve_thresholds_path(name: str, location: Path | VersionStr) -> Path:
         thresholds_file = _resolve_named_file(local_path, filename)
         if thresholds_file is not None:
             return thresholds_file
+        if location not in MODEL_TO_REVISION:
+            raise ModelNotFoundError(f"No {filename} found in {local_path}")
 
     repo_dir = _download_repo(location)
     thresholds_file = repo_dir / "thresholds" / filename
