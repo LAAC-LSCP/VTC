@@ -4,19 +4,13 @@ icon: lucide/server-cog
 
 # HPC / SLURM setup
 
-> **If your institution has a shared compute cluster (the kind where you submit "jobs" rather than running things directly), this page shows how to run VTC there. If you don't know what SLURM is, you can skip this page — it's not needed for ordinary use.**
+This page explains how to run VTC on a compute cluster that uses the SLURM job scheduler. You don't need it to run VTC on your own machine.
 
-## When is this useful?
+## When to use a cluster
 
-A shared compute cluster is worth the extra setup when:
+A cluster is worth the setup when you have many recordings (tens to hundreds of hours), no fast GPU on your own machine, and access to a cluster through your institution. A SLURM job gives VTC a cluster GPU for as long as it runs.
 
-- you have **a lot of recordings** (tens to hundreds of hours), and
-- you don't have a fast GPU on your own machine, but
-- your university or research institute has a cluster you can access.
-
-In that situation, submitting a SLURM job lets you borrow a GPU on the cluster for as long as VTC needs to run, without tying up your laptop.
-
-If your dataset is small or your laptop already has a usable GPU, just run VTC directly as described in the [User Guide](../guide.md).
+For smaller datasets, or if your machine has a usable GPU, run VTC directly as described in the [User Guide](../guide.md).
 
 ---
 
@@ -24,7 +18,7 @@ If your dataset is small or your laptop already has a usable GPU, just run VTC d
 
 ### Example SLURM submission script
 
-Save the following as `run_vtc.sbatch`, edit the paths, then submit it with `sbatch run_vtc.sbatch`. Adjust partition names, modules, and resource requests to match your cluster's conventions.
+Save the following as `run_vtc.sbatch`, edit the paths, and submit it with `sbatch run_vtc.sbatch`. Adjust the partition, modules and resources to your cluster.
 
 ```bash
 #!/bin/bash
@@ -38,22 +32,31 @@ Save the following as `run_vtc.sbatch`, edit the paths, then submit it with `sba
 
 cd /path/to/VTC
 
-uv run scripts/infer.py \
+uv run vtc-infer \
     --wavs /path/to/audio_files \
     --output /path/to/output \
     --device cuda
 ```
 
-1. Number of CPU cores to reserve on the machine
-2. Amount of memory to use
-3. Maximum job duration, adjust to match your dataset size.
+1. Number of CPU cores to reserve.
+2. Amount of memory to reserve.
+3. Maximum job duration. Adjust it to the size of your dataset.
 
+### Offline compute nodes
 
+VTC downloads its model from Hugging Face on the first run, but compute nodes often have no internet access. Download the model beforehand from a login node by running VTC once there on a short recording with `--device cpu`. The model is cached in `~/.cache/huggingface/hub/`, and jobs on the compute nodes reuse it.
+
+If your home folder is too small or not shared with the compute nodes, set `HF_HOME` to a shared disk, both when downloading and in the job script. With `HF_HUB_OFFLINE=1` in the job script, Hugging Face uses the cache without trying to connect:
+
+```bash
+export HF_HOME=/shared/scratch/$USER/huggingface
+export HF_HUB_OFFLINE=1
+```
 
 ### Sizing the job
 
-Use the [speed benchmarks](../guide.md#how-long-will-it-take) in the User Guide to estimate wall time for the GPU you're targeting. The 4-hour `--time` value above is conservative; tighten it for shorter corpora.
+Estimate the run time for your GPU from the [speed benchmarks](../guide.md#how-long-will-it-take). The 4-hour `--time` above is generous for small datasets.
 
-### Very large corpora
+### Very large datasets
 
-For corpora that won't comfortably finish in a single job, split the audio files across many smaller batches and submit them as a SLURM array job — each array task processes its own slice of the input folder and writes to its own output subfolder. This parallelises across cluster nodes and is also more resilient to individual job failures.
+If a dataset is too large for one job, split the audio files into smaller groups and submit a SLURM array job, with each task processing one group and writing to its own output folder. The tasks run in parallel on several nodes, and a failed task only affects its own group.

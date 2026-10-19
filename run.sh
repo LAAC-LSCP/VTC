@@ -6,6 +6,6 @@ output=out/$(date +%Y%m%d_%H%M)_inference_output
 
 mkdir -p $output
 
-uv run scripts/infer.py \
+uv run vtc-infer \
     --wavs $audios_path \
     --output $output

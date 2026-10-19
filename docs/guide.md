@@ -4,55 +4,54 @@ icon: lucide/file-sliders
 
 # User Guide
 
-> **This page covers running VTC on your audio and understanding the files it produces. The Technical Reference at the bottom collects the full list of command-line options, performance benchmarks, and other details for engineers.**
-
-Make sure you've completed the [Getting Started](getting-started.md) page before continuing.
+This page explains how to run VTC and read its output. The [Technical Reference](#technical-reference) lists every command-line option. Complete [Getting Started](getting-started.md) first.
 
 ---
 
 ## Run VTC
 
-> **One command processes a whole folder of recordings. The basic form is below; see [Command Line Interface Arguments](#command-line-interface-arguments) at the bottom for everything else you can configure.**
-
-To run VTC, place your `.wav` files in a folder (let's call it `audio_folder`), then run this in a terminal, replacing the angle-bracketed paths with your own:
+Put your `.wav` files in one folder and run the following command, replacing the paths in angle brackets with your own:
 
 ```bash
-uv run scripts/infer.py      \
+uv run vtc-infer             \
     --wavs <audio_folder>    \
     --output <output_folder> \
     --device cpu
 ```
 
-A helper script is also provided at `scripts/run.sh` so you don't have to retype the command. Open the file in a text editor and change the variables at the top:
+VTC processes every `.wav` file in the folder. The first run downloads the model and needs an internet connection (see [Where the model comes from](getting-started.md#where-the-model-comes-from)).
 
-- `audios_path`: the path to the folder containing your `.wav` files (e.g., `audios_path="/home/user/my_project/audio"`).
-- `output`: where you want the results saved (e.g., `output="/home/user/my_project/output"`).
+To avoid retyping the command, edit the variables at the top of `run.sh`, at the root of the repository:
 
-Then run it:
+- `audios_path`: the folder containing your `.wav` files, e.g. `audios_path="/home/user/my_project/audio"`.
+- `output`: the folder for the results, e.g. `output="/home/user/my_project/output"`. By default, each run writes to a new timestamped folder inside `out/`.
+
+Then run:
 
 ```bash
-sh scripts/run.sh
+sh run.sh
 ```
 
 ---
 
 ## Understanding the output
 
-> **VTC writes one row per detected speech segment, in two equivalent formats. Use the CSV for analysis; the RTTM files exist mainly for compatibility with other speech-processing tools.**
-
-After VTC finishes, your output folder will look like this:
+After a run, the output folder contains:
 
 ```
 <output_folder>/
 ├── 📂 rttm/          # One .rttm file per audio recording
-└── 📄 rttm.csv       # All detected segments combined into one CSV
+├── 📄 rttm.csv       # All detected segments combined into one CSV
+└── 📄 f1.toml        # A copy of the thresholds used for this run
 ```
 
-Both formats contain the same information. **For analysis, we recommend the CSV** — it opens directly in Excel, Numbers, or LibreOffice, and loads cleanly into a dataframe in R or Python. The RTTM files exist because RTTM is a standard format used across speech-processing tools, so other software in the pipeline (such as ALICE) may expect it.
+`rttm/` and `rttm.csv` contain the same results. Use the CSV for analysis: it opens in Excel, Numbers or LibreOffice and loads directly into R or Python. RTTM is a standard format in speech processing, and other tools such as ALICE expect it.
+
+The `.toml` file records which [thresholds](advanced/thresholds.md) were used: `f1.toml` by default, `hp.toml` in high-precision mode, or your own file's name for [custom thresholds](advanced/thresholds.md#custom-threshold-files).
 
 ### What's in each row
 
-Every row of the CSV (and every line of an RTTM file) describes one detected segment of speech, with four pieces of information that matter for analysis:
+Each row of the CSV, and each line of an RTTM file, is one detected speech segment:
 
 | Field | Meaning |
 |---|---|
@@ -61,7 +60,7 @@ Every row of the CSV (and every line of an RTTM file) describes one detected seg
 | `duration_s` | How long the segment lasts, in seconds. |
 | `label` | The speaker category: `KCHI`, `OCH`, `MAL`, or `FEM`. |
 
-Here is an example of a few segments from one recording, followed by an illustration of what those segments look like laid out on a timeline. *VTC does not produce the picture itself — only the CSV/RTTM. The picture is just to help you visualise what the rows mean.*
+For example, these rows from one recording correspond to the timeline below (the image is an illustration; VTC does not produce it):
 
 ```csv
 uid,              start_time_s, duration_s, label
@@ -74,7 +73,7 @@ recording_jd7aks,         8.24,       0.52,   OCH
 ```
 ![Detected speech segments laid out along a timeline](assets/recording_jd7aks.png)
 
-Notice that two segments can overlap in time (here, `MAL` and `FEM` between 5.86 s and 5.96 s, and `MAL` and `KCHI` between 6.10 s and 7.96 s). This is intentional: VTC labels each speaker category independently, so it can correctly mark moments where, for example, an adult is talking while the child is babbling at the same time.
+Segments can overlap: here `MAL` and `FEM` overlap between 5.86 s and 5.96 s, and `MAL` and `KCHI` between 6.10 s and 7.96 s. VTC detects each category independently, so it can mark an adult and the child speaking at the same time.
 
 ??? note "RTTM format details"
     The `📂 rttm/` folder contains one RTTM file per audio file, one line per detected segment, in this layout:
@@ -83,100 +82,111 @@ Notice that two segments can overlap in time (here, `MAL` and `FEM` between 5.86
     SPEAKER <uid> 1 <start_time_s> <duration_s> <NA> <NA> <label> <NA> <NA>
     ```
 
-    The four useful fields are `uid`, `start_time_s`, `duration_s`, and `label`. The `1` and the `<NA>` placeholders are required by the RTTM specification but are not used by VTC.
+    The `1` and `<NA>` fields are required by the RTTM specification and are not used by VTC.
 
 ---
 
 ## How long will it take?
 
-> **VTC runs much faster on a GPU than on a CPU. As a rough guide: a 1-hour recording takes a few seconds on a modern GPU and a few minutes on a CPU.**
-
-The table below shows measured processing times on a few representative machines. The "Real-time factor" column tells you how much faster than real time VTC runs — for example, a factor of 905× means that 1 hour of audio is processed in about 4 seconds.
+VTC is much faster on a GPU than on a CPU. The table shows measured processing times. The real-time factor is how many times faster than real time VTC runs: at 226×, one hour of audio takes about 16 seconds.
 
 | Setup | Real-time factor | 1 h of audio | 16 h of audio |
 |-------|---------|----------|-----------|
-| H100 GPU, batch 256 | 905× | ~4 s | ~1 min |
-| A40 GPU, batch 256 | 650× | ~6 s | ~1.5 min |
-| CPU (Xeon Silver), batch 64 | 16× | ~4 min | ~1 h |
+| H100 GPU, batch 256 | 226× | ~16 s | ~4 min |
+| CPU (AMD EPYC 9334, 32 cores), batch 256 | 7× | ~8.5 min | ~2.3 h |
 
-For large studies (hundreds of hours of recordings), a GPU is strongly recommended. If you don't have one available locally, your institution may have a shared compute cluster — see [HPC / SLURM setup](advanced/hpc.md).
+Use a GPU for large studies (hundreds of hours of recordings). If you don't have one, see [HPC / SLURM setup](advanced/hpc.md) for running VTC on a compute cluster.
 
 !!! note "These numbers are approximate"
-    Actual processing time depends on the specific hardware, audio length distribution, disk I/O speed, and the chosen batch size. Use the table as a rough planning guide, not a guarantee.
+    Processing time also depends on the hardware, the length of the recordings, disk speed, the batch size and the sliding-window stride (`--stride_pct`, see [Command Line Interface Arguments](#command-line-interface-arguments)).
 
-If VTC crashes with a "CUDA out of memory" error, lower the batch size and try again. The technical details of how to do that are in the [Technical Reference](#command-line-interface-arguments) below.
+If VTC fails with `CUDA out of memory`, lower the batch size (see [Batch size and memory](#batch-size-and-memory)).
 
 ---
 
 ## Technical Reference
 
-> *This section is intended for engineers and power users. Non-technical readers can skip it.*
-
 ### Command Line Interface Arguments
 
-Complete list of arguments accepted by `scripts/infer.py`.
+Arguments accepted by `vtc-infer` (also listed by `uv run vtc-infer --help`):
 
-| <div style="width: 140px;">Argument</div> | Default    | Description                                                        |
-|-------------------------------------------|--------------------------------|--------------------------------------------------------------------|
-| `--config`                                | `VTC-2/model/config.yml`     | Config file to be loaded and used for inference.                   |
-| `--checkpoint`                            | `VTC-2/model/best.ckpt`      | Path to a pretrained model checkpoint.                             |
-| `--wavs`                                  | **required**                   | Folder containing the audio files to run inference on.             |
-| `--output`                                | **required**                   | Output path to the folder that will contain the final predictions. |
-| `--uris`                                  | —                              | Path to a file containing the list of URIs to use.                 |
-| `--save_probs`                            | `False`                        | Save the probabilities to disk. Can be memory intensive.           |
-| `--thresholds`                            | —                              | Path to a thresholds dict to perform predictions via thresholding. |
-| `--min_duration_on_s`                     | `0.1`                          | Remove speech segments shorter than that many seconds.             |
-| `--min_duration_off_s`                    | `0.1`                          | Fill same-speaker gaps shorter than that many seconds.             |
-| `--batch_size`                            | `128`                          | Batch size for the forward pass of the model.                      |
-| `--recursive_search`                      | `False`                        | Recursively search for `.wav` files. May be slow.                  |
-| `--device`                                | `cuda`                         | Device to use. Choices: `gpu`, `cuda`, `cpu`, `mps`.               |
-| `--keep_raw`                              | `False`                        | Keep raw RTTM and save to `<output>/raw_rttm/`.                    |
+| <div style="width: 180px;">Argument</div> | Default    | Description                                                        |
+|-------------------------------------------|------------|--------------------------------------------------------------------|
+| `--wavs`                                  | `data/debug/wav` | Folder containing the audio files. The default is a development folder, so always set this. |
+| `--output`                                | **required** | Folder for the results. |
+| `--device`                                | `cuda`     | `cuda`, `gpu` (same as `cuda`), `cpu` or `mps`. |
+| `--batch_size`                            | `128`      | Batch size for the model's forward pass. |
+| `--checkpoint`                            | `2.2`      | Model weights to use: a model version (`2.2` or `2.1`; for 2.0, see [Using VTC 2.0](misc/versions.md#using-vtc-20)), a local `.pt`/`.ckpt` file, or a folder containing one. |
+| `--config`                                | `2.2`      | Model configuration to use: a model version, a local `config.toml` file, or a folder containing one. Must match `--checkpoint`. |
+| `--thresholds-name`                       | `f1`       | Name of the thresholds file to use, without the `.toml` extension (e.g. `f1`, `hp`, or your own). |
+| `--thresholds-location`                   | same as `--checkpoint` | Where to look for the thresholds file: a model version, a local `.toml` file, or a folder containing it. |
+| `--high-precision`                        | `False`    | Use the high-precision thresholds (`hp`). Overrides `--thresholds-name`. |
+| `--stride_pct`                            | `0.25`     | Step of the sliding window, as a fraction of the window length (`0.25` = 75% overlap, `0.5` = 50% overlap). Larger values are faster. |
+| `--min_duration_on_s`                     | `0.1`      | Remove speech segments shorter than that many seconds.             |
+| `--min_duration_off_s`                    | `0.1`      | Fill same-speaker gaps shorter than that many seconds.             |
+| `--recursive_search`                      | `False`    | Also search subfolders of `--wavs`. Can be slow on large folders. |
+| `--uris`                                  | —          | Text file listing the recordings to process, one file name per line (relative to `--wavs`, with or without `.wav`). Other files in `--wavs` are ignored. |
+| `--keep_raw`                              | `False`    | Keep the raw RTTM files in `<output>/raw_rttm/` and write `<output>/raw_rttm.csv`. See [Raw model outputs](advanced/raw_outputs.md). |
+| `--save_probs`                            | `False`    | Save the averaged per-frame probabilities to `<output>/probs/`. Can produce large files. |
+
+!!! info "Model files are downloaded on demand"
+    When `--checkpoint`, `--config` or `--thresholds-location` is a model version such as `2.2`, VTC downloads the files from the [`coml/VTC-2`](https://huggingface.co/coml/VTC-2) Hugging Face repository and caches them. Pass local paths instead to run a [fine-tuned](advanced/finetuning.md) model.
 
 ### Example commands
 
-**Basic usage on CPU** — process all `.wav` files in `my_audio/` and save results to `my_output/`:
+Process all `.wav` files in `my_audio/` on the CPU and write the results to `my_output/`:
 
 ```bash hl_lines="2 3"
-uv run scripts/infer.py \
+uv run vtc-infer \
     --wavs my_audio/ \
     --output my_output/ \
     --device cpu
 ```
 
-**GPU with a smaller batch size** — useful if your GPU has limited memory:
+Use a smaller batch size on a GPU with limited memory:
 
 ```bash hl_lines="5"
-uv run scripts/infer.py \
+uv run vtc-infer \
     --wavs my_audio/ \
     --output my_output/ \
     --device cuda \
     --batch_size 64
 ```
 
-**Search subfolders for audio files** — if your `.wav` files are organized in subdirectories (e.g., one per participant):
+Include `.wav` files in subfolders, for example one folder per participant:
 
 ```bash hl_lines="5"
-uv run scripts/infer.py \
+uv run vtc-infer \
     --wavs my_audio/ \
     --output my_output/ \
     --device cuda \
     --recursive_search
 ```
 
-**Keep raw (unprocessed) output** — save the pre-post-processing RTTM files for debugging or custom analysis. See [Understanding raw RTTM model outputs](advanced/raw_outputs.md):
+Use the high-precision thresholds, which give fewer false detections but miss more speech (see [Threshold selection](advanced/thresholds.md)):
 
 ```bash hl_lines="5"
-uv run scripts/infer.py \
+uv run vtc-infer \
+    --wavs my_audio/ \
+    --output my_output/ \
+    --device cuda \
+    --high-precision
+```
+
+Also keep the RTTM files from before post-processing (see [Raw model outputs](advanced/raw_outputs.md)):
+
+```bash hl_lines="5"
+uv run vtc-infer \
     --wavs my_audio/ \
     --output my_output/ \
     --device cuda \
     --keep_raw
 ```
 
-**Filter out very short segments** — drop detected segments shorter than 0.2 s and merge same-speaker gaps shorter than 0.15 s:
+Drop segments shorter than 0.2 s and merge same-speaker segments separated by less than 0.15 s:
 
 ```bash hl_lines="5 6"
-uv run scripts/infer.py \
+uv run vtc-infer \
     --wavs my_audio/ \
     --output my_output/ \
     --device cuda \
@@ -184,15 +194,34 @@ uv run scripts/infer.py \
     --min_duration_off_s 0.15
 ```
 
+### Python API
+
+`run_vtc` takes the same options as the command line, as keyword arguments: `--batch_size 64` becomes `batch_size=64`, `--high-precision` becomes `high_precision=True`, and `--thresholds-name` becomes `thresholds`.
+
+```python
+from vtc_inference import run_vtc
+
+run_vtc(
+    output="my_output/",
+    wavs="my_audio/",
+    config="2.2",
+    checkpoint="2.2",
+    device="cpu",
+)
+```
+
+!!! warning "Always set `config`, `checkpoint` and `device` from Python"
+    In Python, `config` and `checkpoint` default to `2.1` and `device` to `gpu`, unlike the command line.
+
 ### Batch size and memory
 
-Larger batch sizes give higher throughput but require more GPU memory. The default batch size is `128`. Recommended starting points: `256` for an H100 or A100, `128` for an A40 or RTX 3090, `64` for an RTX 3060 / 12 GB cards, `32` or lower for CPU runs. Lower the batch size if you hit `CUDA out of memory`. Note: `--batch_size` controls the model forward-pass batch, not the number of files processed in parallel.
+Larger batches are faster but use more GPU memory. Suggested starting points: `256` for an H100 or A100, `128` (the default) for an A40 or RTX 3090, `64` for an RTX 3060 or other 12 GB cards, and `32` or lower on CPU. Lower the batch size if you get `CUDA out of memory`. `--batch_size` sets the number of audio windows per forward pass, not the number of files processed in parallel.
 
 <!-- ### Post-processing defaults
 
 Predictions are post-processed before being written out:
 
-1. Per-class binarization using thresholds from `f1.toml` (default) or `hp.toml` (with `--high_precision`). See [Threshold selection](advanced/thresholds.md).
+1. Per-class binarization using thresholds from `f1.toml` (default) or `hp.toml` (with `--high-precision`). See [Threshold selection](advanced/thresholds.md).
 2. Removal of segments shorter than `--min_duration_on_s` seconds.
 3. Merging of same-class segments separated by less than `--min_duration_off_s` seconds.
 

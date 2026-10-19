@@ -10,7 +10,7 @@ The four classes that the model will output are:
 
 The model has been specifically trained to work with child-centered long-form recordings. These are recordings that can span multiple hours and have been collected using a portable recorder attached to the vest of a child (usually 0 to 5 years of age).
 
-## 0. Table of content
+## 0. Table of contents
 
 1. [Installation](#1-installation)
 2. [Inference](#2-inference)
@@ -20,8 +20,8 @@ The model has been specifically trained to work with child-centered long-form re
 
 ## 1. Installation
 
-To use the model, you will need a unix-based machine (Linux or MacOS) and python version 3.13 or higher installed. Windows is not supported for the moment.
-As system dependencies, ensure that [uv](https://docs.astral.sh/uv/), [ffmpeg](https://ffmpeg.org/), and [git-lfs](https://git-lfs.com/) are installed. You can check that by running:
+To use the model, you will need a unix-based machine (Linux or MacOS). Windows is not supported for the moment. You don't need to install Python yourself: uv installs Python 3.13 when you run `uv sync`.
+As system dependencies, ensure that [uv](https://docs.astral.sh/uv/) and [ffmpeg](https://ffmpeg.org/) (version 4 to 8) are installed. FFmpeg 9 is not supported yet; on macOS, Homebrew's default `ffmpeg` is version 9, so follow the `ffmpeg@8` steps in the [documentation](https://laac-lscp.github.io/VTC/getting-started/#installation). You can check that the tools are installed by running:
 
 ```bash
 ./check_sys_dependencies.sh
@@ -30,8 +30,7 @@ As system dependencies, ensure that [uv](https://docs.astral.sh/uv/), [ffmpeg](h
 You can now clone the repo with:
 
 ```bash
-git lfs install
-git clone --recurse-submodules https://github.com/LAAC-LSCP/VTC.git
+git clone https://github.com/LAAC-LSCP/VTC.git
 cd VTC
 ```
 
@@ -41,18 +40,27 @@ Finally, you can install python dependencies with the following command:
 uv sync
 ```
 
+The model weights, config and thresholds are not stored in this repository. They are downloaded automatically from the [`coml/VTC-2`](https://huggingface.co/coml/VTC-2) Hugging Face repository the first time you run inference, and cached locally (in `~/.cache/huggingface/` by default) for later runs.
+
 ## 2. Inference
 
-Inference is done using a checkpoint of the model, linking the corresponding config file used for training and the list of audio files to run the model on. You audio files should be in the `.wav` format, sampled at 16 000 kHz and contain a single channel (mono).
-If not, you can use the `scripts/convert.py` file to convert your audios to 16 000 Hz and average the channels.
-
+Your audio files should be in the `.wav` format, sampled at 16 kHz and contain a single channel (mono).
+If not, you can use the `convert-audios` command to resample your `.wav` files to 16 kHz and average the channels:
 
 ```bash
-uv run scripts/infer.py \
+uv run convert-audios --wavs raw_audios --output audios
+```
+
+Then run the model on the folder containing your audio files:
+
+```bash
+uv run vtc-infer \
     --wavs audios \        # path to the folder containing the audio files
     --output predictions \ # output folder
     --device cpu           # device to run the model on: ('cpu', 'cuda' or 'gpu', 'mps')
 ```
+
+By default, the latest model (VTC 2.2) and its balanced thresholds are used. Pass `--high-precision` to use the high-precision thresholds instead. The full list of options (batch size, previous model versions, custom thresholds, segment merging, ...) is available with `uv run vtc-infer --help` and in the [documentation](https://laac-lscp.github.io/VTC/guide/#command-line-interface-arguments). VTC 2.0 cannot be run with this version: check out the `v2.0.2` tag instead, as described in the [version history](https://laac-lscp.github.io/VTC/misc/versions/#using-vtc-20).
 
 The model outputs are saved to `<output_folder>/` with the following structure:
 
@@ -60,22 +68,39 @@ The model outputs are saved to `<output_folder>/` with the following structure:
 <output_folder>/
 │
 ├── 📂 rttm/          # Final output (with segment merging applied)
-├── 📂 raw_rttm/      # Raw output (without segment merging)
 ├── 📄 rttm.csv       # CSV version of final speaker segments
-└── 📄 raw_rttm.csv   # CSV version of raw speaker segments
+├── 📄 f1.toml        # Copy of the thresholds used for this run
+│
+├── 📂 raw_rttm/      # Raw output, without segment merging (only with --keep_raw)
+└── 📄 raw_rttm.csv   # CSV version of raw speaker segments (only with --keep_raw)
 ```
 
 #### Helper script
-An example of a bash script is given to perform inference in `scripts/run.sh`. Simply set the correct variables in the script and run it:
+An example of a bash script is given to perform inference in `run.sh`. Simply set the correct variables in the script and run it:
 
 ```bash
-sh scripts/run.sh
-````
+sh run.sh
+```
+
+#### Python API
+Inference can also be run from Python:
+
+```python
+from vtc_inference import run_vtc
+
+run_vtc(
+    output="predictions",
+    wavs="audios",
+    config="2.2",
+    checkpoint="2.2",
+    device="cpu",
+)
+```
 
 ## 3. Model Performance
 
 ### 3.1 Runtime
-We tested the inference pipeline on multiple GPUs and CPUs and display the expected speedup factors that can be used to estimate the total duration needed to process $x$ hours of audio.
+The tables below give the measured processing time as a fraction of the audio duration.
 
 <table>
 <tr><th>Table 1: GPU times </th><th>Table 2: CPU times</th></tr>
@@ -97,18 +122,18 @@ We tested the inference pipeline on multiple GPUs and CPUs and display the expec
 
 </td></tr> </table>
 
-It takes approximatively $1/7$ of the audio duration to run the model with a batch size of 256 on an H100 GPU.
-- For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 16$ seconds. ($3600 / 226$)
-- For a $16\text{ h}$ longform audio, the inference will run for $\approx 4 \text{ minutes}$. ($16 * 3600 / 226$)
+On an H100 GPU with a batch size of 256, processing takes about $1/226$ of the audio duration:
+- $\approx 16$ seconds for a $1\text{ h}$ recording ($3600 / 226$),
+- $\approx 4$ minutes for a $16\text{ h}$ recording ($16 * 3600 / 226$).
 
 
-On a Intel(R) Xeon(R) Silver 4214R CPU with a batch size of 64, the inference pipeline will be quite slow:
-- For a $1\text{ h}$ long audio, the inference will run for approximatively $\approx 8$ minutes. ($3600 / 7$)
-- For a $16\text{ h}$ longform audio, the inference will run for $\approx 2.2 \text{ hours}$. ($16 * 3600 / 7$)
+On an AMD EPYC 9334 32-Core CPU with a batch size of 256, it takes about $1/7$ of the audio duration:
+- $\approx 8.5$ minutes for a $1\text{ h}$ recording ($3600 / 7$),
+- $\approx 2.3$ hours for a $16\text{ h}$ recording ($16 * 3600 / 7$).
 
 ### 3.2 Model Performance on the heldout set
 
-We evaluate the new model, VTC 2.0, on a heldout set and compare it to the previous models and the Human performance (Human 2).
+We evaluate VTC 2.2 on a heldout set and compare it with previous versions and with a second human annotator (Human 2).
 
 | Model   |   KCHI   |   OCH    |   MAL    |   FEM    | Average F1-score |
 |---------|:--------:|:--------:|:--------:|:--------:|:----------------:|
@@ -119,10 +144,10 @@ We evaluate the new model, VTC 2.0, on a heldout set and compare it to the previ
 | VTC 2.2 |   68.5   | **58.1** | **70.9** | **75.6** |     **68.3**     |
 | Human 2 |   79.7   |   60.4   |   67.6   |   71.5   |       69.8       |
 
-**Table 1**: F1-scores (%) obtained on the standard test set VTC 1.0, VTC 1.5, VTC 2.0, and a second human annotator.
+**Table 1**: F1-scores (%) obtained on the standard test set by VTC 1.0, VTC 1.5, VTC 2.0, VTC 2.1, VTC 2.2, and a second human annotator.
 The best model is indicated in bold.
 
-As displayed in table 1, our model performs better than previous iterations with performances close to the Human performances. 
+VTC 2.2 has the highest average F1-score of all versions, close to the agreement between two human annotators. VTC 2.0 remains best on KCHI.
 
 ---
 ## 4. Citation
@@ -148,7 +173,7 @@ Charlot, T., Kunze, T., Poli, M., Cristia, A., Dupoux, E., Lavechin, M. (2026) B
 ```
 
 ## 5. Acknowledgement
-The Voice Type Classifier has benefited from numerous contributions over time, following publications document its evolution, listed in reverse chronological order.
+The following publications document earlier versions of the Voice Type Classifier, in reverse chronological order.
 
 ### VTC 1.5 (Whisper-VTC)
 GitHub repository: [github.com/LAAC-LSCP/VTC-IS-25](https://github.com/LAAC-LSCP/VTC-IS-25)
